@@ -9,6 +9,7 @@ services:
       PORT: "41875"
       MANTO_DB_PATH: /data/manto.sqlite
       PUBLIC_URL: ${PUBLIC_URL:-https://manto.xin}
+      PUBLIC_MCP_URL: ${PUBLIC_MCP_URL:-https://manto.xin/mcp}
       ONEPAY_CREATE_URL: ${ONEPAY_CREATE_URL:-}
       ONEPAY_QUERY_URL: ${ONEPAY_QUERY_URL:-}
     ports:
@@ -25,4 +26,3 @@ services:
       timeout: 3s
       retries: 5
       start_period: 10s
-

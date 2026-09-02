@@ -41,6 +41,7 @@ ssh -i ~/code/ssh/keys/shared_dev_rsa root@43.167.248.105 \
 
 ```dotenv
 PUBLIC_URL=https://manto.xin
+PUBLIC_MCP_URL=https://manto.xin/mcp
 ONEPAY_CREATE_URL=
 ONEPAY_QUERY_URL=
 ```
