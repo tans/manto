@@ -28,3 +28,10 @@ export function publish(account: any, input: any) {
 }
 function result(row: any, operation: string, account: any) { const used = (db.query("SELECT post_count FROM daily_usage WHERE account_id=?1 AND usage_date=?2").get(account.id,today()) as any)?.post_count || 0; return { content_id: row.id, operation, quota: { used, limit: quotaFor(account) }, account_score: scoreFor(account) }; }
 export function removeContent(account: any, id: string) { const r = db.query("UPDATE contents SET status='removed',updated_at=?1 WHERE id=?2 AND account_id=?3").run(now(),id,account.id); if (!r.changes) throw new Error("content_not_found"); return { content_id:id, status:"removed" }; }
+export function listPublicContent(accountId: string, limit = 20, includeContent = false) {
+  const account = db.query("SELECT id FROM accounts WHERE id=?1").get(accountId);
+  if (!account) throw new Error("account_not_found");
+  const safeLimit = Math.min(100, Math.max(1, Math.floor(limit || 20)));
+  const rows = db.query("SELECT id AS content_id,title,content,url,published_at,updated_at,expires_at FROM contents WHERE account_id=?1 AND status='published' AND (expires_at IS NULL OR expires_at > ?2) ORDER BY published_at DESC LIMIT ?3").all(accountId, now(), safeLimit) as any[];
+  return rows.map(row => includeContent ? row : (({ content, ...summary }) => summary)(row));
+}

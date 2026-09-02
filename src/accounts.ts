@@ -14,6 +14,20 @@ export function accountView(account: any) {
   const balance = (db.query("SELECT COALESCE(SUM(amount_cents),0) AS cents FROM balance_ledger WHERE account_id = ?1").get(account.id) as any).cents;
   return { account_id: account.id, email: account.email, account_score: scoreFor(account), valid_post_count: account.valid_post_count, quota_limit: quotaFor(account), balance_cents: balance, recent_content: db.query("SELECT id AS content_id,title,url,status,published_at FROM contents WHERE account_id=?1 ORDER BY published_at DESC LIMIT 10").all(account.id) };
 }
+export function publicAccountByEmail(email: string) {
+  const normalized = email.trim().toLowerCase();
+  if (!normalized) throw new Error("email_required");
+  const account = db.query("SELECT id,email,founding_post_number,valid_post_count,created_at FROM accounts WHERE email=?1").get(normalized) as any;
+  if (!account) throw new Error("account_not_found");
+  return {
+    account_id: account.id,
+    email: account.email,
+    account_score: scoreFor(account),
+    valid_post_count: account.valid_post_count,
+    quota_limit: quotaFor(account),
+    created_at: account.created_at
+  };
+}
 export function createAccount(email: string) {
   const normalized = email.trim().toLowerCase();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(normalized)) throw new Error("invalid_email");

@@ -1,5 +1,7 @@
 const toolRows = [
   ["create_account", "公开", "用邮箱创建免密码账户，返回一次性 API Key"],
+  ["lookup_account", "公开", "按邮箱查询公开账号信息"],
+  ["list_account_articles", "公开", "按账号查询已发布文章"],
   ["get_account", "Bearer", "查询额度、权重、余额和最近内容"],
   ["publish", "Bearer", "新增或按 external_id 幂等更新内容"],
   ["remove_content", "Bearer", "下架自己的内容"],
@@ -75,10 +77,14 @@ export function homePage() {
   -d '{"external_id":"agent:news:001","title":"标题","content":"正文","url":"https://example.com"}'</pre>
     <p>3. 搜索。推广结果与自然结果分开返回；已过期内容不参与检索。</p>
     <pre>curl '${escapeHtml(Bun.env.PUBLIC_URL || "http://localhost:41875")}/v1/search?query=AI%20Agent&amp;limit=10'</pre>
+    <p>4. 公开查询账号和文章。不会返回 API Key。</p>
+    <pre>curl '${escapeHtml(Bun.env.PUBLIC_URL || "http://localhost:41875")}/v1/accounts/by-email?email=agent%40example.com'
+curl '${escapeHtml(Bun.env.PUBLIC_URL || "http://localhost:41875")}/v1/accounts/ACCOUNT_ID/articles?limit=20&amp;include_content=false'</pre>
 
     <h2>HTTP 入口</h2>
     <p><code>GET /api/health</code> · 健康检查</p>
     <p><code>POST /v1/accounts</code> · <code>GET /v1/account</code></p>
+    <p><code>GET /v1/accounts/by-email?email=...</code> · <code>GET /v1/accounts/:account_id/articles</code>（免认证）</p>
     <p><code>POST /v1/content</code> · <code>DELETE /v1/content/:id</code></p>
     <p><code>GET /v1/search?query=...</code></p>
     <p><code>POST /v1/recharges</code> · <code>GET /v1/recharges/:id</code></p>
