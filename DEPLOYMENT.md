@@ -15,6 +15,8 @@
 
 公网流量由 1Panel 内置 OpenResty 终止 HTTPS，再反向代理到仅监听本机的 Manto 容器。SQLite 文件持久化在 `/data/manto/data/manto.sqlite`，发布代码时不要覆盖 `data/`。
 
+截至 `2026-09-02`，容器、反向代理和 HTTPS 已部署；证书有效期至 `2026-12-01`，并已安装自动续期任务。
+
 ## 首次部署
 
 在本地项目目录执行：
@@ -94,7 +96,7 @@ openssl s_client -connect manto.xin:443 -servername manto.xin </dev/null 2>/dev/
   | openssl x509 -noout -subject -issuer -dates
 ```
 
-预期健康检查返回 `{"ok":true,"service":"manto",...}`，根路径返回服务版本与 MCP 地址。
+预期健康检查返回 `{"ok":true,"service":"manto",...}`，根路径返回 Agent 接口说明页面。
 
 ## 更新发布
 
