@@ -6,7 +6,7 @@ const toolRows = [
   ["get_account", "Bearer", "查询额度、权重、余额和最近内容"],
   ["publish", "Bearer", "新增或按 external_id 幂等更新内容"],
   ["remove_content", "Bearer", "下架自己的内容"],
-  ["create_recharge", "Bearer", "创建 OnePay 充值订单"],
+  ["create_recharge", "Bearer", "创建充值订单"],
   ["get_recharge", "Bearer", "查询充值状态"],
   ["set_promotion", "Bearer", "设置每日推广预算；0 表示暂停"]
 ] as const;
@@ -87,6 +87,14 @@ export function homePage() {
     .table :where(th,td) { min-height:0; padding:4px 6px; border-color:var(--color-base-300,#d9d9d4); vertical-align:top; }
     .table th { font-size:13px; color:color-mix(in oklch,var(--color-base-content,#171815) 62%,transparent); font-weight:600; }
     .table td:first-child,.table td:nth-child(2) { white-space:nowrap; }
+    form { margin:10px 0 4px; }
+    label { font-weight:600; }
+    input,button { font:inherit; }
+    input { max-width:100%; padding:5px 7px; border:1px solid var(--color-base-300,#d9d9d4); border-radius:4px; color:inherit; background:var(--color-base-100,#fff); }
+    input:focus-visible,button:focus-visible { outline:2px solid var(--color-primary,#176b4b); outline-offset:2px; }
+    button { padding:5px 9px; border:1px solid var(--color-primary,#176b4b); border-radius:4px; color:var(--color-primary-content,#fff); background:var(--color-primary,#176b4b); cursor:pointer; }
+    button:disabled { opacity:.6; cursor:wait; }
+    [role="status"] { margin-left:8px; color:color-mix(in oklch,var(--color-base-content,#171815) 72%,transparent); }
     footer { padding:6px 0 2px; color:color-mix(in oklch,var(--color-base-content,#171815) 62%,transparent); }
     ::selection { background:var(--color-primary,#176b4b); color:var(--color-primary-content,#fff); }
     @media (max-width:600px) { body { padding:4px; } .facts { display:block; } .facts span { display:block; } .table { min-width:640px; } }
@@ -119,8 +127,32 @@ export function homePage() {
     <p>有效期：<code>expires_at</code> 到期后不再进入搜索和公开文章列表；账号只能下架自己的内容。</p>
     <p>搜索：默认 10 条、最多 50 条，可传 <code>since</code> 和 <code>include_content</code>；自然结果中单一发布者最多 3 条。</p>
     <p>公开查询：文章列表默认 20 条、最多 100 条；账号查询和文章列表均不返回 API Key。</p>
-    <p>计费：充值单位为分且最低 100，支付能力取决于 OnePay 配置；推广预算单位为分/日，设为 0 即暂停。</p>
+    <p>充值：输入 API Key 和金额创建订单，打开支付链接完成付款，再查询订单状态确认到账；金额单位为分且最低 100。推广预算单位为分/日，设为 0 即暂停。</p>
     <p>错误：HTTP 返回 <code>{"error":"..."}</code>；MCP 返回 JSON-RPC error。</p>
+  </section>
+
+  <section aria-labelledby="payment-title">
+    <h2 id="payment-title">支付流程</h2>
+    <p>1. 输入 API Key 和充值金额，创建订单。</p>
+    <p>2. 打开订单中的支付链接完成付款。</p>
+    <p>3. 付款后查询订单状态，确认余额到账。</p>
+    <form id="recharge-form" aria-describedby="recharge-help">
+      <p id="recharge-help">API Key 只在创建账户时返回，请在安全环境中使用。金额最低为 100 分。</p>
+      <p><label for="recharge-api-key">API Key</label><br><input id="recharge-api-key" name="api_key" type="password" autocomplete="off" required size="34" placeholder="manto_..."></p>
+      <p><label for="recharge-amount">充值金额（分）</label><br><input id="recharge-amount" name="amount_cents" type="number" min="100" step="1" value="100" required inputmode="numeric"></p>
+      <button type="submit">创建充值订单</button>
+      <span id="recharge-create-status" role="status" aria-live="polite"></span>
+    </form>
+    <div id="recharge-result" hidden>
+      <p>订单号：<code id="recharge-id"></code></p>
+      <p>金额：<code id="recharge-total"></code> 分 · 状态：<code id="recharge-state"></code></p>
+      <p id="recharge-payment-row"><a id="recharge-payment-link" target="_blank" rel="noopener noreferrer">打开支付链接</a></p>
+      <form id="recharge-query-form">
+        <input id="recharge-query-id" name="recharge_id" type="hidden">
+        <button type="submit">查询订单状态</button>
+        <span id="recharge-query-status" role="status" aria-live="polite"></span>
+      </form>
+    </div>
   </section>
 
   <section>
@@ -148,6 +180,65 @@ curl '${escapeHtml(baseUrl)}/v1/accounts/by-email?email=agent%40example.com'</pr
 
   <footer>Manto · Streamable HTTP · SQLite · <a href="/api/health">health</a> · <a href="/llms.txt">llms.txt</a> · <a href="/sitemap.xml">sitemap</a> · <a href="https://github.com/tans/manto">GitHub</a></footer>
 </main>
+<script>
+(() => {
+  const form = document.querySelector("#recharge-form");
+  const queryForm = document.querySelector("#recharge-query-form");
+  const result = document.querySelector("#recharge-result");
+  const apiKey = document.querySelector("#recharge-api-key");
+  const amount = document.querySelector("#recharge-amount");
+  const createStatus = document.querySelector("#recharge-create-status");
+  const queryStatus = document.querySelector("#recharge-query-status");
+  const paymentRow = document.querySelector("#recharge-payment-row");
+  const paymentLink = document.querySelector("#recharge-payment-link");
+  const setText = (selector, value) => { document.querySelector(selector).textContent = String(value ?? ""); };
+  const errorText = (error) => ({
+    authorization_required: "API Key 无效或未提供，请检查后重试。",
+    invalid_amount: "金额必须是至少 100 分的整数。",
+    recharge_not_found: "找不到这个订单，请确认订单号和 API Key。",
+    payment_not_confirmed: "付款尚未确认，请稍后再次查询。",
+    payment_service_unavailable: "当前支付服务暂不可用，请稍后再试。"
+  })[error] || "操作失败，请稍后再试。";
+  const readError = async (response) => {
+    try { return errorText((await response.json()).error); } catch { return errorText(); }
+  };
+  const setBusy = (button, busy) => { button.disabled = busy; button.setAttribute("aria-busy", String(busy)); };
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = form.querySelector("button");
+    setBusy(button, true); createStatus.textContent = "正在创建订单…";
+    result.hidden = true;
+    try {
+      const response = await fetch("/v1/recharges", { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + apiKey.value.trim() }, body: JSON.stringify({ amount_cents: Number(amount.value) }) });
+      if (!response.ok) throw new Error(await readError(response));
+      const data = await response.json();
+      setText("#recharge-id", data.recharge_id);
+      setText("#recharge-total", data.amount_cents);
+      setText("#recharge-state", data.status);
+      document.querySelector("#recharge-query-id").value = data.recharge_id;
+      if (data.payment_url) { paymentLink.href = data.payment_url; paymentRow.hidden = false; } else { paymentRow.hidden = true; }
+      result.hidden = false; createStatus.textContent = "订单已创建。";
+    } catch (error) { createStatus.textContent = error instanceof Error ? error.message : errorText(); }
+    finally { setBusy(button, false); }
+  });
+
+  queryForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = queryForm.querySelector("button");
+    setBusy(button, true); queryStatus.textContent = "正在查询…";
+    try {
+      const id = document.querySelector("#recharge-query-id").value;
+      const response = await fetch("/v1/recharges/" + encodeURIComponent(id), { headers: { authorization: "Bearer " + apiKey.value.trim() } });
+      if (!response.ok) throw new Error(await readError(response));
+      const data = await response.json();
+      setText("#recharge-state", data.status);
+      queryStatus.textContent = data.status === "paid" ? "已确认到账。" : "付款尚未确认，可稍后再次查询。";
+    } catch (error) { queryStatus.textContent = error instanceof Error ? error.message : errorText(); }
+    finally { setBusy(button, false); }
+  });
+})();
+</script>
 </body>
 </html>`;
 }

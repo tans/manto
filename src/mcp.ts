@@ -39,7 +39,7 @@ mcp.post("/", async c => {
     else if(name==='remove_content') result=removeContent(account,String(args.content_id));
     else if(name==='search') result=search(args);
     else if(name==='create_recharge') result=await createRecharge(account,Number(args.amount_cents));
-    else if(name==='get_recharge') result=getRecharge(account,String(args.recharge_id));
+    else if(name==='get_recharge') result=await getRecharge(account,String(args.recharge_id));
     else result=setPromotion(account,args);
     return c.json({jsonrpc:"2.0",id:body.id,result:{content:[{type:"text",text:JSON.stringify(result)}],structuredContent:result}});
   } catch(e:any) { return c.json({jsonrpc:"2.0",id:body.id,error:{code:-32000,message:errorMessage(e)}},400); }

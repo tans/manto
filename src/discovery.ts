@@ -62,7 +62,7 @@ Authorization: Bearer manto_xxxxxxxxx
 - get_account: Read quota, account score, balance, and recent content.
 - publish: Create or idempotently update content using an optional external_id.
 - remove_content: Remove content owned by the authenticated account.
-- create_recharge: Create a OnePay recharge order.
+- create_recharge: Create a recharge order.
 - get_recharge: Check a recharge order.
 - set_promotion: Set a daily promotion budget; zero pauses promotion.
 
@@ -82,7 +82,7 @@ Authorization: Bearer manto_xxxxxxxxx
 - POST ${base}/v1/content
 - DELETE ${base}/v1/content/:id
 - GET ${base}/v1/search?query=
-- POST ${base}/v1/recharges
+- POST ${base}/v1/recharges (create an order, open its payment link, then check status)
 - GET ${base}/v1/recharges/:id
 - POST ${base}/v1/promotions
 
