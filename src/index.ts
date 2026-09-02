@@ -7,11 +7,12 @@ import { publish, removeContent } from "./contents";
 import { search } from "./search";
 import { createRecharge, getRecharge, handleCallback } from "./payments";
 import { setPromotion } from "./promotions";
+import { homePage } from "./home";
 import "./db";
 
 const app = new Hono();
 app.use("/*", cors());
-app.get("/", c => c.json({name:"manto",version:"1.0.0",mcp:"/mcp"}));
+app.get("/", c => c.html(homePage()));
 app.get("/api/health", c => c.json({ok:true,service:"manto",time:new Date().toISOString()}));
 app.route("/mcp", mcp);
 function auth(c:any){ const account=accountFromApiKey(c.req.header("authorization")?.replace(/^Bearer\s+/i,"")); if(!account) throw new Error("authorization_required"); return account; }
