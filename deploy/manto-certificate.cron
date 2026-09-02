@@ -1,0 +1,1 @@
+17 3 * * * root /data/manto/deploy/renew-certificate.sh >> /var/log/manto-certificate-renew.log 2>&1
