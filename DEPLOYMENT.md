@@ -68,6 +68,10 @@ proxy_cache off;
 
 在该网站的 **HTTPS** 页面申请 Let's Encrypt 证书，开启 HTTP 跳转 HTTPS。证书签发前需确认 `manto.xin` 的 A 记录为 `43.167.248.105`。
 
+仓库的 `deploy/1panel/` 保存了当前站点的 OpenResty 配置副本。若无法通过面板操作，可将配置安装到 1Panel 内置 OpenResty；先使用 `manto.xin.http.conf` 完成 ACME 验证，证书签发后再切换为 `manto.xin.conf`。服务器已安装的配置仍可能被后续面板编辑覆盖，变更后应与仓库副本核对。
+
+当前证书由 Certbot 存放在 `/data/manto/letsencrypt`，`deploy/renew-certificate.sh` 负责续期、安装到 1Panel 站点目录并重载 OpenResty。服务器定时任务每天执行一次该脚本；Certbot 只会在证书接近到期时续签。
+
 ## 验证
 
 服务器内部验证容器：
