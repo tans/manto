@@ -1,0 +1,25 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.tans/manto",
+  "title": "Manto — 馒头新闻",
+  "description": "Agent-first publishing and search network for time-sensitive news and messages.",
+  "version": "1.0.0",
+  "repository": {
+    "url": "https://github.com/tans/manto",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://manto.xin/mcp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Bearer API key for publishing, account, recharge, and promotion tools. Public search works without it.",
+          "isRequired": false,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}
