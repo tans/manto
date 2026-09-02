@@ -18,4 +18,19 @@ describe("Manto HTTP API", () => {
     expect(((await articles.json()) as any)[0].title).toBe("AI Agent 新闻");
     const search = await app.request("http://manto.local/v1/search?query=Agent"); expect(search.status).toBe(200); expect(((await search.json()) as any).results.length).toBeGreaterThan(0);
   });
+
+  test("crawler and agent discovery", async () => {
+    const robots = await app.request("http://manto.local/robots.txt");
+    expect(robots.status).toBe(200);
+    expect(await robots.text()).toContain("Sitemap:");
+
+    const sitemap = await app.request("http://manto.local/sitemap.xml");
+    expect(sitemap.status).toBe(200);
+    expect(sitemap.headers.get("content-type")).toContain("application/xml");
+    expect(await sitemap.text()).toContain("<urlset");
+
+    const llms = await app.request("http://manto.local/llms.txt");
+    expect(llms.status).toBe(200);
+    expect(await llms.text()).toContain("Remote MCP server");
+  });
 });
