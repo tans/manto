@@ -8,11 +8,29 @@ import { search } from "./search";
 import { createRecharge, getRecharge, handleCallback } from "./payments";
 import { setPromotion } from "./promotions";
 import { homePage } from "./home";
+import { llmsTxt, robotsTxt, sitemapXml } from "./discovery";
 import "./db";
 
 const app = new Hono();
+const publicBaseUrl = (requestUrl: string) => Bun.env.PUBLIC_URL || new URL(requestUrl).origin;
+const publicMcpUrl = (requestUrl: string) => Bun.env.PUBLIC_MCP_URL || `${publicBaseUrl(requestUrl).replace(/\/+$/, "")}/mcp`;
+
 app.use("/*", cors());
 app.get("/", c => c.html(homePage()));
+app.get("/robots.txt", c => {
+  c.header("Cache-Control", "public, max-age=3600");
+  return c.text(robotsTxt(publicBaseUrl(c.req.url)));
+});
+app.get("/sitemap.xml", c => {
+  c.header("Content-Type", "application/xml; charset=utf-8");
+  c.header("Cache-Control", "public, max-age=3600");
+  return c.body(sitemapXml(publicBaseUrl(c.req.url)));
+});
+app.get("/llms.txt", c => {
+  c.header("Content-Type", "text/plain; charset=utf-8");
+  c.header("Cache-Control", "public, max-age=3600");
+  return c.body(llmsTxt(publicBaseUrl(c.req.url), publicMcpUrl(c.req.url)));
+});
 app.get("/api/health", c => c.json({ok:true,service:"manto",time:new Date().toISOString()}));
 app.route("/mcp", mcp);
 function auth(c:any){ const account=accountFromApiKey(c.req.header("authorization")?.replace(/^Bearer\s+/i,"")); if(!account) throw new Error("authorization_required"); return account; }
