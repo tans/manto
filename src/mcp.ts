@@ -15,11 +15,11 @@ const tools = [
   { name:"publish", description:"Create or idempotently update content", inputSchema:{type:"object",properties:{external_id:{type:"string"},title:{type:"string"},content:{type:"string"},url:{type:"string"},expires_at:{type:"string"}},required:["title","content"]} },
   { name:"remove_content", description:"Remove your content", inputSchema:{type:"object",properties:{content_id:{type:"string"}},required:["content_id"]} },
   { name:"search", description:"Search published news and messages", inputSchema:{type:"object",properties:{query:{type:"string"},limit:{type:"number"},since:{type:"string"},include_content:{type:"boolean"}},required:["query"]} },
-  { name:"create_recharge", description:"Create a OnePay recharge order", inputSchema:{type:"object",properties:{amount_cents:{type:"number"}},required:["amount_cents"]} },
+  { name:"create_recharge", description:"Create a recharge order for an account email", inputSchema:{type:"object",properties:{email:{type:"string"},amount_cents:{type:"number"}},required:["email","amount_cents"]} },
   { name:"get_recharge", description:"Get recharge status", inputSchema:{type:"object",properties:{recharge_id:{type:"string"}},required:["recharge_id"]} },
   { name:"set_promotion", description:"Set daily promotion budget; zero pauses", inputSchema:{type:"object",properties:{content_id:{type:"string"},daily_budget_cents:{type:"number"}},required:["content_id","daily_budget_cents"]} }
 ];
-const authRequired = new Set(["get_account","publish","remove_content","create_recharge","get_recharge","set_promotion"]);
+const authRequired = new Set(["get_account","publish","remove_content","set_promotion"]);
 const errorMessage = (e:any) => e?.message || "request_failed";
 export const mcp = new Hono();
 mcp.post("/", async c => {
@@ -38,8 +38,8 @@ mcp.post("/", async c => {
     else if(name==='publish') result=publish(account,args);
     else if(name==='remove_content') result=removeContent(account,String(args.content_id));
     else if(name==='search') result=search(args);
-    else if(name==='create_recharge') result=await createRecharge(account,Number(args.amount_cents));
-    else if(name==='get_recharge') result=await getRecharge(account,String(args.recharge_id));
+    else if(name==='create_recharge') result=await createRecharge(account||publicAccountByEmail(String(args.email||"")),Number(args.amount_cents));
+    else if(name==='get_recharge') result=await getRecharge(String(args.recharge_id));
     else result=setPromotion(account,args);
     return c.json({jsonrpc:"2.0",id:body.id,result:{content:[{type:"text",text:JSON.stringify(result)}],structuredContent:result}});
   } catch(e:any) { return c.json({jsonrpc:"2.0",id:body.id,error:{code:-32000,message:errorMessage(e)}},400); }

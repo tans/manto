@@ -56,14 +56,14 @@ Authorization: Bearer manto_xxxxxxxxx
 - lookup_account: Look up public account information by email.
 - list_account_articles: List an account's active articles.
 - search: Search published content. Sponsored and organic results are returned separately.
+- create_recharge: Create a recharge order for an existing account email.
+- get_recharge: Check a recharge order.
 
 ## Authenticated MCP tools
 
 - get_account: Read quota, account score, balance, and recent content.
 - publish: Create or idempotently update content using an optional external_id.
 - remove_content: Remove content owned by the authenticated account.
-- create_recharge: Create a recharge order.
-- get_recharge: Check a recharge order.
 - set_promotion: Set a daily promotion budget; zero pauses promotion.
 
 ## Minimal workflow

@@ -11,6 +11,7 @@ function absolutePaymentUrl(value: unknown) {
 
 export async function createRecharge(account:any, amountCents:number) {
   if(!Number.isInteger(amountCents)||amountCents<100) throw new Error("invalid_amount");
+  const accountId=account.id || account.account_id;
   const id=crypto.randomUUID();
   const callbackToken=newToken("cb_");
   const callbackUrl=`${publicBaseUrl()}/v1/payments/onepay/callback?recharge_id=${encodeURIComponent(id)}&callback_token=${encodeURIComponent(callbackToken)}`;
@@ -30,7 +31,7 @@ export async function createRecharge(account:any, amountCents:number) {
   const onepayOrderId=String(order.id || order._id || data.order_id || "");
   const paymentUrl=absolutePaymentUrl(data.paymentUrl || data.payment_url);
   if(!onepayOrderId || !paymentUrl) throw new Error("payment_service_unavailable");
-  transaction(()=>db.query("INSERT INTO recharges(id,account_id,onepay_order_id,amount_cents,callback_token_hash,payment_url,created_at) VALUES(?,?,?,?,?,?,?)").run(id,account.id,onepayOrderId,amountCents,hash(callbackToken),paymentUrl,now()));
+  transaction(()=>db.query("INSERT INTO recharges(id,account_id,onepay_order_id,amount_cents,callback_token_hash,payment_url,created_at) VALUES(?,?,?,?,?,?,?)").run(id,accountId,onepayOrderId,amountCents,hash(callbackToken),paymentUrl,now()));
   return {recharge_id:id,amount_cents:amountCents,status:"pending",payment_url:paymentUrl};
 }
 
@@ -63,10 +64,12 @@ async function refreshRecharge(id:string, accountId:string, recharge:any) {
   return db.query("SELECT id AS recharge_id,amount_cents,status,payment_url,created_at,paid_at FROM recharges WHERE id=?1 AND account_id=?2").get(id,accountId);
 }
 
-export async function getRecharge(account:any,id:string){
-  const r=db.query("SELECT * FROM recharges WHERE id=?1 AND account_id=?2").get(id,account.id) as any;
+export async function getRecharge(id:string, accountId?:string){
+  const r=accountId
+    ? db.query("SELECT * FROM recharges WHERE id=?1 AND account_id=?2").get(id,accountId) as any
+    : db.query("SELECT * FROM recharges WHERE id=?1").get(id) as any;
   if(!r) throw new Error("recharge_not_found");
-  return refreshRecharge(id,account.id,r);
+  return refreshRecharge(id,r.account_id,r);
 }
 
 export async function handleCallback(id:string, token:string){

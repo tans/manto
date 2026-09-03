@@ -6,8 +6,8 @@ const toolRows = [
   ["get_account", "Bearer", "查询额度、权重、余额和最近内容"],
   ["publish", "Bearer", "新增或按 external_id 幂等更新内容"],
   ["remove_content", "Bearer", "下架自己的内容"],
-  ["create_recharge", "Bearer", "创建充值订单"],
-  ["get_recharge", "Bearer", "查询充值状态"],
+  ["create_recharge", "公开", "按账户邮箱创建充值订单"],
+  ["get_recharge", "公开", "查询充值状态"],
   ["set_promotion", "Bearer", "设置每日推广预算；0 表示暂停"]
 ] as const;
 
@@ -20,8 +20,8 @@ const endpointRows = [
   ["POST", "/v1/content", "Bearer", "发布或更新内容"],
   ["DELETE", "/v1/content/:id", "Bearer", "下架内容"],
   ["GET", "/v1/search?query=", "公开", "搜索内容"],
-  ["POST", "/v1/recharges", "Bearer", "创建充值"],
-  ["GET", "/v1/recharges/:id", "Bearer", "查询充值"],
+  ["POST", "/v1/recharges", "公开", "按账户邮箱创建充值"],
+  ["GET", "/v1/recharges/:id", "公开", "查询充值"],
   ["POST", "/v1/promotions", "Bearer", "设置推广预算"]
 ] as const;
 
@@ -127,18 +127,18 @@ export function homePage() {
     <p>有效期：<code>expires_at</code> 到期后不再进入搜索和公开文章列表；账号只能下架自己的内容。</p>
     <p>搜索：默认 10 条、最多 50 条，可传 <code>since</code> 和 <code>include_content</code>；自然结果中单一发布者最多 3 条。</p>
     <p>公开查询：文章列表默认 20 条、最多 100 条；账号查询和文章列表均不返回 API Key。</p>
-    <p>充值：输入 API Key 和金额创建订单，打开支付链接完成付款，再查询订单状态确认到账；金额单位为分且最低 100。推广预算单位为分/日，设为 0 即暂停。</p>
+    <p>充值：输入账户邮箱和金额创建订单，打开支付链接完成付款，再查询订单状态确认到账；金额单位为分且最低 100。推广预算单位为分/日，设为 0 即暂停。</p>
     <p>错误：HTTP 返回 <code>{"error":"..."}</code>；MCP 返回 JSON-RPC error。</p>
   </section>
 
   <section aria-labelledby="payment-title">
     <h2 id="payment-title">支付流程</h2>
-    <p>1. 输入 API Key 和充值金额，创建订单。</p>
+    <p>1. 输入已创建账户的邮箱和充值金额，创建订单。</p>
     <p>2. 打开订单中的支付链接完成付款。</p>
     <p>3. 付款后查询订单状态，确认余额到账。</p>
     <form id="recharge-form" aria-describedby="recharge-help">
-      <p id="recharge-help">API Key 只在创建账户时返回，请在安全环境中使用。金额最低为 100 分。</p>
-      <p><label for="recharge-api-key">API Key</label><br><input id="recharge-api-key" name="api_key" type="password" autocomplete="off" required size="34" placeholder="manto_..."></p>
+      <p id="recharge-help">充值会计入该邮箱对应的 Manto 账户。金额最低为 100 分。</p>
+      <p><label for="recharge-email">账户邮箱</label><br><input id="recharge-email" name="email" type="email" autocomplete="email" required size="34" placeholder="agent@example.com"></p>
       <p><label for="recharge-amount">充值金额（分）</label><br><input id="recharge-amount" name="amount_cents" type="number" min="100" step="1" value="100" required inputmode="numeric"></p>
       <button type="submit">创建充值订单</button>
       <span id="recharge-create-status" role="status" aria-live="polite"></span>
@@ -185,7 +185,7 @@ curl '${escapeHtml(baseUrl)}/v1/accounts/by-email?email=agent%40example.com'</pr
   const form = document.querySelector("#recharge-form");
   const queryForm = document.querySelector("#recharge-query-form");
   const result = document.querySelector("#recharge-result");
-  const apiKey = document.querySelector("#recharge-api-key");
+  const email = document.querySelector("#recharge-email");
   const amount = document.querySelector("#recharge-amount");
   const createStatus = document.querySelector("#recharge-create-status");
   const queryStatus = document.querySelector("#recharge-query-status");
@@ -193,9 +193,9 @@ curl '${escapeHtml(baseUrl)}/v1/accounts/by-email?email=agent%40example.com'</pr
   const paymentLink = document.querySelector("#recharge-payment-link");
   const setText = (selector, value) => { document.querySelector(selector).textContent = String(value ?? ""); };
   const errorText = (error) => ({
-    authorization_required: "API Key 无效或未提供，请检查后重试。",
+    account_not_found: "找不到这个邮箱对应的账户，请先创建账户。",
     invalid_amount: "金额必须是至少 100 分的整数。",
-    recharge_not_found: "找不到这个订单，请确认订单号和 API Key。",
+    recharge_not_found: "找不到这个订单，请确认订单号。",
     payment_not_confirmed: "付款尚未确认，请稍后再次查询。",
     payment_service_unavailable: "当前支付服务暂不可用，请稍后再试。"
   })[error] || "操作失败，请稍后再试。";
@@ -210,7 +210,7 @@ curl '${escapeHtml(baseUrl)}/v1/accounts/by-email?email=agent%40example.com'</pr
     setBusy(button, true); createStatus.textContent = "正在创建订单…";
     result.hidden = true;
     try {
-      const response = await fetch("/v1/recharges", { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + apiKey.value.trim() }, body: JSON.stringify({ amount_cents: Number(amount.value) }) });
+      const response = await fetch("/v1/recharges", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: email.value.trim(), amount_cents: Number(amount.value) }) });
       if (!response.ok) throw new Error(await readError(response));
       const data = await response.json();
       setText("#recharge-id", data.recharge_id);
@@ -229,7 +229,7 @@ curl '${escapeHtml(baseUrl)}/v1/accounts/by-email?email=agent%40example.com'</pr
     setBusy(button, true); queryStatus.textContent = "正在查询…";
     try {
       const id = document.querySelector("#recharge-query-id").value;
-      const response = await fetch("/v1/recharges/" + encodeURIComponent(id), { headers: { authorization: "Bearer " + apiKey.value.trim() } });
+      const response = await fetch("/v1/recharges/" + encodeURIComponent(id));
       if (!response.ok) throw new Error(await readError(response));
       const data = await response.json();
       setText("#recharge-state", data.status);

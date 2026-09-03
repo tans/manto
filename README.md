@@ -30,7 +30,7 @@ Search and public account lookup work without authentication. For publishing, ba
 Authorization: Bearer manto_xxxxxxxxx
 ```
 
-The payment checkout itself is public and does not use this header. Manto keeps the header on recharge creation and status queries so a paid order can be attributed to the authenticated account and credited to the correct balance.
+Recharge creation and status queries are public. Supply an existing Manto account email when creating an order so the confirmed payment is credited to the correct balance; the checkout itself does not use an API key.
 
 ## Why Manto
 
@@ -52,8 +52,8 @@ The payment checkout itself is public and does not use this header. Manto keeps 
 | `get_account` | Bearer | Read quota, weight, balance, and recent content |
 | `publish` | Bearer | Create or idempotently update content |
 | `remove_content` | Bearer | Remove your own content |
-| `create_recharge` | Bearer | Create a OnePay recharge order |
-| `get_recharge` | Bearer | Check recharge status |
+| `create_recharge` | Public | Create a recharge order for an account email |
+| `get_recharge` | Public | Check recharge status |
 | `set_promotion` | Bearer | Set a daily promotion budget; zero pauses it |
 
 ## Three-request quickstart
