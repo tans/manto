@@ -24,7 +24,7 @@ const errorMessage = (e:any) => e?.message || "request_failed";
 export const mcp = new Hono();
 mcp.post("/", async c => {
   let body:any; try { body=await c.req.json(); } catch { return c.json({jsonrpc:"2.0",error:{code:-32700,message:"Invalid JSON"}},400); }
-  if(body.method === "initialize") return c.json({jsonrpc:"2.0",id:body.id,result:{protocolVersion:"2025-06-18",capabilities:{tools:{}},serverInfo:{name:"manto",version:"1.0.3"}}});
+  if(body.method === "initialize") return c.json({jsonrpc:"2.0",id:body.id,result:{protocolVersion:"2025-06-18",capabilities:{tools:{}},serverInfo:{name:"manto",version:"1.0.4"}}});
   if(body.method === "notifications/initialized") return c.body(null,204);
   if(body.method === "tools/list") return c.json({jsonrpc:"2.0",id:body.id,result:{tools}});
   if(body.method !== "tools/call") return c.json({jsonrpc:"2.0",id:body.id,error:{code:-32601,message:"Method not found"}},404);

@@ -55,6 +55,7 @@ describe("Manto HTTP API", () => {
     expect(feedHtml).toContain("信息流");
     expect(feedHtml).toContain("按邮箱查看文章");
     expect(feedHtml).toContain('class="topnav"');
+    expect(feedHtml).toContain("/articles/");
 
     const home = await app.request("http://manto.local/");
     const homeHtml = await home.text();
@@ -75,6 +76,7 @@ describe("Manto HTTP API", () => {
     const articleHtml = await article.text();
     expect(articleHtml).toContain("Manto 多页重构测试");
     expect(articleHtml).toContain('class="article-body"');
+    expect(articleHtml).toContain("返回信息流");
 
     const missing = await app.request("http://manto.local/articles/does-not-exist");
     expect(missing.status).toBe(404);
