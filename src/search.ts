@@ -1,8 +1,13 @@
 import { db } from "./db";
 import { scoreFor } from "./accounts";
 import { chooseSponsored } from "./promotions";
+function toFtsQuery(raw: unknown): string {
+  const cleaned = String(raw || "").trim().replace(/"/g, '""');
+  if (!cleaned) throw new Error("query_required");
+  return `"${cleaned}"`;
+}
 export function search(input: any) {
-  const query = String(input.query || "").trim(); if (!query) throw new Error("query_required");
+  const query = toFtsQuery(input.query);
   const limit = Math.min(50, Math.max(1, Number(input.limit || 10))); const since = input.since ? new Date(input.since).toISOString() : null;
   const rows = db.query(`SELECT c.*, a.valid_post_count, a.founding_post_number, bm25(contents_fts,4.0,1.0) AS relevance FROM contents_fts JOIN contents c ON c.id=contents_fts.content_id JOIN accounts a ON a.id=c.account_id WHERE contents_fts MATCH ?1 AND c.status='published' AND (c.expires_at IS NULL OR c.expires_at > ?2) AND (?3 IS NULL OR c.published_at >= ?3) ORDER BY relevance LIMIT ?4`).all(query, new Date().toISOString(), since, limit * 3) as any[];
   const sponsored = chooseSponsored(query, rows);

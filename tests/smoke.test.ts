@@ -19,6 +19,14 @@ describe("Manto HTTP API", () => {
     const search = await app.request("http://manto.local/v1/search?query=Agent"); expect(search.status).toBe(200); expect(((await search.json()) as any).results.length).toBeGreaterThan(0);
   });
 
+  test("search tolerates FTS5 syntax characters without 500", async () => {
+    const malicious = 'Agent" OR "';
+    const res = await app.request(`http://manto.local/v1/search?query=${encodeURIComponent(malicious)}`);
+    expect(res.status).toBe(200);
+    const data: any = await res.json();
+    expect(Array.isArray(data.results)).toBe(true);
+  });
+
   test("crawler and agent discovery", async () => {
     const robots = await app.request("http://manto.local/robots.txt");
     expect(robots.status).toBe(200);
