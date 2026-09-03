@@ -42,16 +42,54 @@ describe("Manto HTTP API", () => {
     expect(await llms.text()).toContain("Remote MCP server");
   });
 
-  test("feed returns recent articles and homepage exposes lookup UI", async () => {
+  test("feed page renders lookup UI and homepage links to browse content", async () => {
     const feed = await app.request("http://manto.local/v1/feed?limit=5");
     expect(feed.status).toBe(200);
     expect(Array.isArray(await feed.json())).toBe(true);
 
+    const feedPageRes = await app.request("http://manto.local/feed");
+    expect(feedPageRes.status).toBe(200);
+    const feedHtml = await feedPageRes.text();
+    expect(feedHtml).toContain('id="feed-list"');
+    expect(feedHtml).toContain('id="lookup-form"');
+    expect(feedHtml).toContain("信息流");
+    expect(feedHtml).toContain("按邮箱查看文章");
+    expect(feedHtml).toContain('class="topnav"');
+
     const home = await app.request("http://manto.local/");
-    const html = await home.text();
-    expect(html).toContain('id="feed-list"');
-    expect(html).toContain('id="lookup-form"');
-    expect(html).toContain("信息流");
-    expect(html).toContain("按邮箱查看文章");
+    const homeHtml = await home.text();
+    expect(homeHtml).toContain("浏览内容");
+    expect(homeHtml).toContain('href="/feed"');
+    expect(homeHtml).toContain('href="/rss.xml"');
+  });
+
+  test("article page, rss feed and sitemap expose published content", async () => {
+    const account = await app.request("http://manto.local/v1/accounts", {method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email:`article-${Date.now()}@example.com`})});
+    const acc: any = await account.json();
+    const publishRes = await app.request("http://manto.local/v1/content", {method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${acc.api_key}`},body:JSON.stringify({external_id:"smoke-article",title:"Manto 多页重构测试",content:"用于验证文章承载页与 RSS 的占位内容。"})});
+    const pub: any = await publishRes.json();
+    const id = pub.content_id;
+
+    const article = await app.request(`http://manto.local/articles/${id}`);
+    expect(article.status).toBe(200);
+    const articleHtml = await article.text();
+    expect(articleHtml).toContain("Manto 多页重构测试");
+    expect(articleHtml).toContain('class="article-body"');
+
+    const missing = await app.request("http://manto.local/articles/does-not-exist");
+    expect(missing.status).toBe(404);
+
+    const rss = await app.request("http://manto.local/rss.xml");
+    expect(rss.status).toBe(200);
+    expect(rss.headers.get("content-type")).toContain("application/rss+xml");
+    const rssText = await rss.text();
+    expect(rssText).toContain("<rss");
+    expect(rssText).toContain("Manto 多页重构测试");
+
+    const sitemap = await app.request("http://manto.local/sitemap.xml");
+    const smText = await sitemap.text();
+    expect(smText).toContain("/feed");
+    expect(smText).toContain("/rss.xml");
+    expect(smText).toContain(`/articles/${id}`);
   });
 });

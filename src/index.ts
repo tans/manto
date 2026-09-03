@@ -3,11 +3,11 @@ import { cors } from "hono/cors";
 import { mcp } from "./mcp";
 import { accountFromApiKey } from "./auth";
 import { createAccount, accountView, publicAccountByEmail } from "./accounts";
-import { publish, removeContent, listPublicContent, recentContent } from "./contents";
+import { publish, removeContent, listPublicContent, recentContent, getContent } from "./contents";
 import { search } from "./search";
 import { createRecharge, getRecharge, handleCallback } from "./payments";
 import { setPromotion } from "./promotions";
-import { homePage } from "./home";
+import { homePage, feedPage, articlePage, rssXml } from "./home";
 import { llmsTxt, robotsTxt, sitemapXml } from "./discovery";
 import "./db";
 
@@ -17,6 +17,13 @@ const publicMcpUrl = (requestUrl: string) => Bun.env.PUBLIC_MCP_URL || `${public
 
 app.use("/*", cors());
 app.get("/", c => c.html(homePage()));
+app.get("/feed", c => c.html(feedPage()));
+app.get("/articles/:id", c => { try { return c.html(articlePage(getContent(c.req.param("id")))); } catch(e){ return jsonError(c,e); } });
+app.get("/rss.xml", c => {
+  c.header("Content-Type", "application/rss+xml; charset=utf-8");
+  c.header("Cache-Control", "public, max-age=1800");
+  return c.body(rssXml(publicBaseUrl(c.req.url)));
+});
 app.get("/robots.txt", c => {
   c.header("Cache-Control", "public, max-age=3600");
   return c.text(robotsTxt(publicBaseUrl(c.req.url)));

@@ -3,7 +3,7 @@
   "name": "io.github.tans/manto",
   "title": "Manto — 馒头新闻",
   "description": "Publish, search, and promote time-sensitive news and messages through a public remote MCP server.",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "repository": {
     "url": "https://github.com/tans/manto",
     "source": "github"

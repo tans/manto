@@ -1,3 +1,5 @@
+import { recentContent } from "./contents";
+
 const cleanUrl = (value: string) => value.replace(/\/+$/, "");
 
 const escapeXml = (value: string) =>
@@ -19,7 +21,11 @@ Sitemap: ${base}/sitemap.xml
 }
 
 export function sitemapXml(baseUrl: string) {
-  const home = escapeXml(cleanUrl(baseUrl) + "/");
+  const base = cleanUrl(baseUrl);
+  const home = escapeXml(base + "/");
+  const feed = escapeXml(base + "/feed");
+  const rss = escapeXml(base + "/rss.xml");
+  const articles = recentContent(200).map(r => "  <url>\n    <loc>" + escapeXml(base + "/articles/" + encodeURIComponent(r.content_id)) + "</loc>\n    <lastmod>" + escapeXml(r.published_at) + "</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>\n  </url>").join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
@@ -27,6 +33,17 @@ export function sitemapXml(baseUrl: string) {
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
+  <url>
+    <loc>${feed}</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${rss}</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.5</priority>
+  </url>
+${articles}
 </urlset>
 `;
 }

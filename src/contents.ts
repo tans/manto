@@ -41,3 +41,9 @@ export function recentContent(limit = 20) {
   const rows = db.query("SELECT c.id AS content_id, c.title, c.content, c.url, c.published_at, a.id AS account_id, a.email FROM contents c JOIN accounts a ON a.id=c.account_id WHERE c.status='published' AND (c.expires_at IS NULL OR c.expires_at > ?1) ORDER BY c.published_at DESC LIMIT ?2").all(now(), safeLimit) as any[];
   return rows.map(r => ({ content_id:r.content_id, title:r.title, excerpt:r.content.slice(0,240), url:r.url, published_at:r.published_at, account_id:r.account_id, email:r.email }));
 }
+
+export function getContent(id: string) {
+  const row = db.query("SELECT c.id AS content_id, c.title, c.content, c.url, c.published_at, a.id AS account_id, a.email FROM contents c JOIN accounts a ON a.id=c.account_id WHERE c.id=?1 AND c.status='published' AND (c.expires_at IS NULL OR c.expires_at > ?2)").get(id, now()) as any;
+  if (!row) throw new Error("content_not_found");
+  return row;
+}
