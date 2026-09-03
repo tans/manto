@@ -30,6 +30,7 @@ rsync -az --delete \
   --exclude '.env' \
   --exclude 'data/' \
   --exclude 'node_modules/' \
+  --exclude '.workbuddy/' \
   -e 'ssh -i ~/code/ssh/keys/shared_dev_rsa' \
   ./ root@43.167.248.105:/data/manto/
 
@@ -111,6 +112,7 @@ rsync -az --delete \
   --exclude '.env' \
   --exclude 'data/' \
   --exclude 'node_modules/' \
+  --exclude '.workbuddy/' \
   -e 'ssh -i ~/code/ssh/keys/shared_dev_rsa' \
   ./ root@43.167.248.105:/data/manto/
 

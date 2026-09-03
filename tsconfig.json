@@ -25,5 +25,9 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
-  }
+  },
+  // Adapters under integrations/ target other repositories (MultiPost,
+  // OmniDistribute, content-distribution-mcp) and import their modules.
+  // They are compiled in those repos, never here.
+  "exclude": ["integrations"]
 }

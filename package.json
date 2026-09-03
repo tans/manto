@@ -1,6 +1,6 @@
 {
   "name": "manto",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "private": true,
   "type": "module",
   "scripts": { "dev": "bun --watch src/index.ts", "start": "bun src/index.ts", "check": "bunx tsc --noEmit", "test": "bun test" },
