@@ -7,6 +7,7 @@ import { publish, removeContent, listPublicContent, recentContent, getContent } 
 import { search } from "./search";
 import { createRecharge, getRecharge, handleCallback } from "./payments";
 import { setPromotion } from "./promotions";
+import { listComments, createComment } from "./comments";
 import { homePage, payPage, feedPage, articlePage, geoPage, rssXml } from "./home";
 import { llmsTxt, robotsTxt, sitemapXml } from "./discovery";
 import "./db";
@@ -20,6 +21,10 @@ app.get("/", c => c.html(homePage()));
 app.get("/pay", c => c.html(payPage()));
 app.get("/feed", c => c.html(feedPage()));
 app.get("/articles/:id", c => { try { return c.html(articlePage(getContent(c.req.param("id")))); } catch(e){ return jsonError(c,e); } });
+app.get("/v1/content/:id/comments", c => { try { return c.json(listComments(c.req.param("id"))); } catch(e){ return jsonError(c,e); } });
+app.post("/v1/content/:id/comments", async c => { try { return c.json(createComment(auth(c), c.req.param("id"), await c.req.json()), 201); } catch(e){ return jsonError(c,e); } });
+app.get("/v1/articles/:id/comments", c => { try { return c.json(listComments(c.req.param("id"))); } catch(e){ return jsonError(c,e); } });
+app.post("/v1/articles/:id/comments", async c => { try { return c.json(createComment(auth(c), c.req.param("id"), await c.req.json()), 201); } catch(e){ return jsonError(c,e); } });
 app.get("/geo", c => c.html(geoPage()));
 app.get("/rss.xml", c => {
   c.header("Content-Type", "application/rss+xml; charset=utf-8");

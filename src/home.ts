@@ -1,4 +1,5 @@
 import { recentContent, getContent } from "./contents";
+import { listComments } from "./comments";
 import { VERSION } from "./version";
 
 const toolRows = [
@@ -133,7 +134,7 @@ const feedItemServer = (r:any) => {
   const detail = "/articles/" + encodeURIComponent(r.content_id);
   const source = r.url ? ' <a class="feed-source" href="' + escapeHtml(r.url) + '" target="_blank" rel="noopener noreferrer">原文</a>' : '';
   const excerpt = r.excerpt ? '<p class="feed-excerpt">' + escapeHtml(r.excerpt) + '</p>' : '';
-  const meta = '<span>' + escapeHtml(r.email || r.account_id) + '</span><span>' + escapeHtml(r.published_at) + '</span>' + source;
+  const meta = '<span>发布者</span><span>' + escapeHtml(r.published_at) + '</span>' + source;
   return '<li class="feed-item"><a class="feed-title" href="' + escapeHtml(detail) + '">' + escapeHtml(r.title) + '</a>' + excerpt + '<p class="feed-meta">' + meta + '</p></li>';
 };
 
@@ -185,6 +186,10 @@ footer { padding:6px 0 2px; color:color-mix(in oklch,var(--color-base-content,#1
 .article-back { margin:0 0 8px; }
 #feed-search,#lookup-form { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
 .article-body { white-space:pre-wrap; line-height:1.7; max-width:80ch; }
+.comment-item { border-top:1px solid var(--color-base-300,#d9d9d4); padding:8px 0; max-width:80ch; }
+.comment-item:first-child { border-top:0; }
+.comment-body { white-space:pre-wrap; overflow-wrap:anywhere; }
+textarea { max-width:100%; padding:5px 7px; border:1px solid var(--color-base-300,#d9d9d4); border-radius:4px; color:inherit; background:var(--color-base-100,#fff); font:inherit; }
 .bullets { margin:4px 0; padding-left:20px; max-width:80ch; }
 .bullets li { margin:3px 0; }`;
 
@@ -476,7 +481,7 @@ export function feedPage() {
     const itemHtml = function(r) {
       const detail = '/articles/' + encodeURIComponent(r.content_id || '');
       const source = r.url ? ' <a class="feed-source" href="' + esc(r.url) + '" target="_blank" rel="noopener noreferrer">原文</a>' : '';
-      const meta = r.email ? '<span>' + esc(r.email) + '</span>' : (r.publisher_score != null ? '<span>相关度 ' + esc(r.publisher_score) + '</span>' : '');
+      const meta = r.publisher_score != null ? '<span>相关度 ' + esc(r.publisher_score) + '</span>' : '<span>发布者</span>';
       return '<li class="feed-item"><a class="feed-title" href="' + detail + '">' + esc(r.title || '') + '</a>' + (r.excerpt ? '<p class="feed-excerpt">' + esc(r.excerpt) + '</p>' : '') + '<p class="feed-meta">' + meta + (r.published_at ? '<span>' + esc(r.published_at) + '</span>' : '') + source + '</p></li>';
     };
     const render = function(list, rows) { list.innerHTML = (rows && rows.length) ? rows.map(itemHtml).join('') : '<li class="feed-item">没有结果。</li>'; };
@@ -518,13 +523,47 @@ export function articlePage(row: any) {
   const baseUrl = Bun.env.PUBLIC_URL || "http://localhost:41875";
   const canonical = baseUrl.replace(/\/+$/, "") + "/articles/" + encodeURIComponent(row.content_id);
   const url = row.url ? escapeHtml(row.url) : "";
+  const comments = listComments(row.content_id);
+  const commentsHtml = comments.length ? comments.map(comment => '<li class="comment-item"><div class="comment-body">' + escapeHtml(comment.body) + '</div><p class="feed-meta"><span>匿名用户</span><span>' + escapeHtml(comment.created_at) + '</span></p></li>').join('') : '<li class="comment-item">暂无评论。</li>';
   const body = `<article>
     <p class="article-back"><a href="/feed">← 返回信息流</a></p>
     <header>
       <h1>${escapeHtml(row.title)}</h1>
-      <p class="feed-meta"><span>发布者：${escapeHtml(row.email || row.account_id)}</span><span>${escapeHtml(row.published_at || "")}</span>${url ? '<span><a href="' + url + '" target="_blank" rel="noopener noreferrer">原文链接</a></span>' : ''}</p>
+      <p class="feed-meta"><span>发布者</span><span>${escapeHtml(row.published_at || "")}</span>${url ? '<span><a href="' + url + '" target="_blank" rel="noopener noreferrer">原文链接</a></span>' : ''}</p>
     </header>
     <div class="article-body">${escapeHtml(row.content)}</div>
+    <section aria-labelledby="comments-title">
+      <h2 id="comments-title">评论（${comments.length}）</h2>
+      <ul id="comments-list" class="feed-list">${commentsHtml}</ul>
+      <form id="comment-form" aria-describedby="comment-help">
+        <p id="comment-help" class="summary">使用 Manto API Key 发布评论。评论中不会显示邮箱。</p>
+        <p><label for="comment-api-key">API Key</label><br><input id="comment-api-key" type="password" autocomplete="off" required size="34" placeholder="manto_..."></p>
+        <p><label for="comment-body">评论内容</label><br><textarea id="comment-body" maxlength="2000" required rows="4" cols="60" placeholder="写下你的看法"></textarea></p>
+        <button type="submit">发表评论</button><span id="comment-status" role="status" aria-live="polite"></span>
+      </form>
+    </section>
+    <script>
+    (() => {
+      const form = document.querySelector('#comment-form');
+      const key = document.querySelector('#comment-api-key');
+      const body = document.querySelector('#comment-body');
+      const status = document.querySelector('#comment-status');
+      const list = document.querySelector('#comments-list');
+      const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+      form.addEventListener('submit', async event => {
+        event.preventDefault(); status.textContent = '提交中…';
+        const button = form.querySelector('button'); button.disabled = true;
+        try {
+          const response = await fetch('/v1/content/${encodeURIComponent(row.content_id)}/comments', { method:'POST', headers:{'content-type':'application/json', authorization:'Bearer ' + key.value.trim()}, body:JSON.stringify({body:body.value}) });
+          const data = await response.json(); if (!response.ok) throw new Error(data.error || 'request_failed');
+          const empty = list.querySelector('.comment-item'); if (empty && empty.textContent === '暂无评论。') list.innerHTML = '';
+          list.insertAdjacentHTML('beforeend', '<li class="comment-item"><div class="comment-body">' + esc(data.body) + '</div><p class="feed-meta"><span>匿名用户</span><span>' + esc(data.created_at) + '</span></p></li>');
+          body.value = ''; status.textContent = '评论已发布。';
+        } catch (error) { status.textContent = error instanceof Error ? error.message : '提交失败'; }
+        finally { button.disabled = false; }
+      });
+    })();
+    </script>
   </article>`;
   return documentShell("", "馒头新闻 Manto：" + row.title, row.title, canonical, body);
 }

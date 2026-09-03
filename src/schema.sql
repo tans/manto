@@ -34,6 +34,14 @@ CREATE TABLE IF NOT EXISTS contents (
   UNIQUE(account_id, external_id)
 );
 CREATE INDEX IF NOT EXISTS contents_published_idx ON contents(status, published_at);
+CREATE TABLE IF NOT EXISTS comments (
+  id TEXT PRIMARY KEY,
+  content_id TEXT NOT NULL REFERENCES contents(id) ON DELETE CASCADE,
+  account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  body TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS comments_content_idx ON comments(content_id, created_at);
 CREATE TABLE IF NOT EXISTS daily_usage (
   account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
   usage_date TEXT NOT NULL,

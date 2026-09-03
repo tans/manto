@@ -16,6 +16,7 @@ describe("Manto HTTP API", () => {
     const articles = await app.request(`http://manto.local/v1/accounts/${data.account_id}/articles`);
     expect(articles.status).toBe(200);
     expect(((await articles.json()) as any)[0].title).toBe("AI Agent 新闻");
+    expect(JSON.stringify(await (await app.request("http://manto.local/v1/feed?limit=5")).json())).not.toContain(data.email);
     const search = await app.request("http://manto.local/v1/search?query=Agent"); expect(search.status).toBe(200); expect(((await search.json()) as any).results.length).toBeGreaterThan(0);
   });
 
@@ -94,6 +95,17 @@ describe("Manto HTTP API", () => {
     expect(articleHtml).toContain("Manto 多页重构测试");
     expect(articleHtml).toContain('class="article-body"');
     expect(articleHtml).toContain("返回信息流");
+    expect(articleHtml).not.toContain(acc.email);
+    expect(articleHtml).toContain('id="comment-form"');
+
+    const commentsBefore = await app.request(`http://manto.local/v1/content/${id}/comments`);
+    expect(commentsBefore.status).toBe(200);
+    expect(await commentsBefore.json()).toEqual([]);
+    const comment = await app.request(`http://manto.local/v1/content/${id}/comments`, {method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${acc.api_key}`},body:JSON.stringify({body:"一条真实评论"})});
+    expect(comment.status).toBe(201);
+    expect(((await comment.json()) as any).body).toBe("一条真实评论");
+    const commentsAfter = await app.request(`http://manto.local/v1/articles/${id}/comments`);
+    expect(((await commentsAfter.json()) as any[])[0].body).toBe("一条真实评论");
 
     const missing = await app.request("http://manto.local/articles/does-not-exist");
     expect(missing.status).toBe(404);
