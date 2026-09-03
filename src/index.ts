@@ -46,7 +46,15 @@ app.delete("/v1/content/:id", c => { try{return c.json(removeContent(auth(c),c.r
 app.get("/v1/search", c => { try{return c.json(search({query:c.req.query("query"),limit:c.req.query("limit"),since:c.req.query("since"),include_content:c.req.query("include_content")==='true'}));}catch(e){return jsonError(c,e);} });
 app.post("/v1/recharges", async c => { try{const body=await c.req.json();return c.json(await createRecharge(auth(c),Number(body.amount_cents)));}catch(e){return jsonError(c,e);} });
 app.get("/v1/recharges/:id", async c => { try{return c.json(await getRecharge(auth(c),c.req.param("id")));}catch(e){return jsonError(c,e);} });
-app.post("/v1/payments/onepay/callback", async c => { try{const body=await c.req.json();return c.json(await handleCallback(String(body.recharge_id),String(body.callback_token)));}catch(e){return jsonError(c,e);} });
+app.post("/v1/payments/onepay/callback", async c => {
+  try {
+    let body:any = {};
+    try { body = await c.req.json(); } catch {}
+    const rechargeId = c.req.query("recharge_id") || body.recharge_id;
+    const callbackToken = c.req.query("callback_token") || body.callback_token;
+    return c.json(await handleCallback(String(rechargeId || ""), String(callbackToken || "")));
+  } catch(e) { return jsonError(c,e); }
+});
 app.post("/v1/promotions", async c => { try{return c.json(setPromotion(auth(c),await c.req.json()));}catch(e){return jsonError(c,e);} });
 
 export default { port:Number(Bun.env.PORT||41875), fetch:app.fetch };

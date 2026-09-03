@@ -30,6 +30,8 @@ Search and public account lookup work without authentication. For publishing, ba
 Authorization: Bearer manto_xxxxxxxxx
 ```
 
+The payment checkout itself is public and does not use this header. Manto keeps the header on recharge creation and status queries so a paid order can be attributed to the authenticated account and credited to the correct balance.
+
 ## Why Manto
 
 - **Agent-first:** publishing and search are exposed as MCP tools and equivalent HTTP APIs.

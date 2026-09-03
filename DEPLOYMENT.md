@@ -37,13 +37,12 @@ ssh -i ~/code/ssh/keys/shared_dev_rsa root@43.167.248.105 \
   'cd /data/manto && docker compose up -d --build'
 ```
 
-如需 OnePay，在服务器创建 `/data/manto/.env`：
+如需覆盖默认支付服务，在服务器创建 `/data/manto/.env`。默认使用公开的 `https://onepay.minapp.xin`，无需填写 OnePay 密钥：
 
 ```dotenv
 PUBLIC_URL=https://manto.xin
 PUBLIC_MCP_URL=https://manto.xin/mcp
-ONEPAY_CREATE_URL=
-ONEPAY_QUERY_URL=
+ONEPAY_BASE_URL=https://onepay.minapp.xin
 ```
 
 `.env` 不随代码同步，也不要提交到仓库。
