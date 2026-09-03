@@ -19,6 +19,7 @@
 | 平台 | 状态 | 提交方式 | 说明 |
 |---|---|---|---|
 | **skills.sh** ✅ | 待提交 | `npx skills add tans/manto --yes` | Vercel Labs，流量最高。首次安装触发遥测即上榜，无网页表单 |
+| **SkillHub（WorkBuddy 技能市场）** ✅ | 待发布 | 见下方「SkillHub 发布流程」 | 腾讯官方，需实名认证账号 + API Token，CLI 发布已就绪 |
 | **agentskill.sh** ❌ | 待核实 | https://agentskill.sh/submit | 实测域名无法连接，需确认是否已下线 |
 | **ClawHub** ✅ | 待提交 | `clawhub skill publish ./skills/manto-geo --slug manto-geo --version 1.0.0` | 需 `npm i -g clawhub` 并登录 |
 | **skills.re** ✅ | 待提交 | https://skills.re/submit | 必须授权 GitHub App；版本快照不可变，发布前校对 |
@@ -27,6 +28,28 @@
 | **agentskillhub.dev** ✅ | 待提交 | 网页 Add Skills 或 `POST /api/v1/repos/import` | 需账号 |
 | **awesome-claude-skills** | 待提交 | https://github.com/travisvn/awesome-claude-skills Fork + PR | 加一行，3–7 天 |
 | **Cursor 插件市场** | 待提交 | https://cursor.com/marketplace/publish | 唯一人工审核，耗时最长，**应最先发** |
+
+### SkillHub 发布流程（WorkBuddy 技能市场，2026-09-03 实测）
+
+发布包：`dist/skillhub/manto-geo/`（源目录）与 `dist/skillhub/manto-geo-1.0.0.zip`（上传包），
+frontmatter 已按 SkillHub CLI 校验规则调整（`slug` / `version` / `displayName` 必填），
+dry-run 已通过。原 `skills/manto-geo/` 保持跨平台标准格式不动。
+
+1. 注册 skillhub.cn 账号并完成实名认证（腾讯云人脸核身）
+2. 个人中心生成 API Token（`skh_` 开头）
+3. 登录并发布：
+
+```bash
+skillhub login --key skh_xxxxxxxx
+skillhub publish dist/skillhub/manto-geo-1.0.0.zip \
+  --version 1.0.0 --changelog "first release to SkillHub"
+```
+
+4. 触发三线并行安全审核（内容合规 / 科恩实验室 / 云鼎实验室），通过后自动上架，
+   WorkBuddy 技能市场可直接搜到「馒头 GEO 投稿」
+
+注意：SkillHub CLI 的 frontmatter 解析是自制简化版（仅 `key: value` 与 `key: [a, b]`），
+不支持嵌套与多行标量；元数据字段用驼峰 `displayName` 而非网页文档所写的 `display_name`。
 
 ### 统一提交文案（英文）
 
@@ -136,3 +159,4 @@
 | 日期 | 平台 | 结果 |
 |---|---|---|
 | 2026-09-02 | 官方 MCP Registry | ✅ 已提交（`io.github.tans/manto`） |
+| 2026-09-03 | SkillHub（WorkBuddy 技能市场） | 📦 发布包就绪（dry-run 通过），待实名认证后 publish |
