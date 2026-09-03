@@ -146,3 +146,7 @@ See [PRODUCT.md](PRODUCT.md) for the product contract and [DEPLOYMENT.md](DEPLOY
 - [llms.txt](https://manto.xin/llms.txt)
 - [server.json](server.json)
 - [Health](https://manto.xin/api/health)
+
+## License
+
+[MIT](LICENSE) © 2026 tans
