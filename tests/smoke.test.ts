@@ -41,4 +41,17 @@ describe("Manto HTTP API", () => {
     expect(llms.status).toBe(200);
     expect(await llms.text()).toContain("Remote MCP server");
   });
+
+  test("feed returns recent articles and homepage exposes lookup UI", async () => {
+    const feed = await app.request("http://manto.local/v1/feed?limit=5");
+    expect(feed.status).toBe(200);
+    expect(Array.isArray(await feed.json())).toBe(true);
+
+    const home = await app.request("http://manto.local/");
+    const html = await home.text();
+    expect(html).toContain('id="feed-list"');
+    expect(html).toContain('id="lookup-form"');
+    expect(html).toContain("信息流");
+    expect(html).toContain("按邮箱查看文章");
+  });
 });

@@ -3,7 +3,7 @@ import { cors } from "hono/cors";
 import { mcp } from "./mcp";
 import { accountFromApiKey } from "./auth";
 import { createAccount, accountView, publicAccountByEmail } from "./accounts";
-import { publish, removeContent, listPublicContent } from "./contents";
+import { publish, removeContent, listPublicContent, recentContent } from "./contents";
 import { search } from "./search";
 import { createRecharge, getRecharge, handleCallback } from "./payments";
 import { setPromotion } from "./promotions";
@@ -45,6 +45,7 @@ app.get("/v1/account", c => { try{return c.json(accountView(auth(c)));}catch(e){
 app.post("/v1/content", async c => { try{return c.json(publish(auth(c),await c.req.json()));}catch(e){return jsonError(c,e);} });
 app.delete("/v1/content/:id", c => { try{return c.json(removeContent(auth(c),c.req.param("id")));}catch(e){return jsonError(c,e);} });
 app.get("/v1/search", c => { try{return c.json(search({query:c.req.query("query"),limit:c.req.query("limit"),since:c.req.query("since"),include_content:c.req.query("include_content")==='true'}));}catch(e){return jsonError(c,e);} });
+app.get("/v1/feed", c => { try { return c.json(recentContent(Number(c.req.query("limit") || 20))); } catch(e){ return jsonError(c,e); } });
 app.post("/v1/recharges", async c => { try{const body=await c.req.json();const account=optionalAuth(c)||publicAccountByEmail(String(body.email||""));return c.json(await createRecharge(account,Number(body.amount_cents)));}catch(e){return jsonError(c,e);} });
 app.get("/v1/recharges/:id", async c => { try{return c.json(await getRecharge(c.req.param("id")));}catch(e){return jsonError(c,e);} });
 app.post("/v1/payments/onepay/callback", async c => {

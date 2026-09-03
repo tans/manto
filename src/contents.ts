@@ -35,3 +35,9 @@ export function listPublicContent(accountId: string, limit = 20, includeContent 
   const rows = db.query("SELECT id AS content_id,title,content,url,published_at,updated_at,expires_at FROM contents WHERE account_id=?1 AND status='published' AND (expires_at IS NULL OR expires_at > ?2) ORDER BY published_at DESC LIMIT ?3").all(accountId, now(), safeLimit) as any[];
   return rows.map(row => includeContent ? row : (({ content, ...summary }) => summary)(row));
 }
+
+export function recentContent(limit = 20) {
+  const safeLimit = Math.min(100, Math.max(1, Math.floor(limit || 20)));
+  const rows = db.query("SELECT c.id AS content_id, c.title, c.content, c.url, c.published_at, a.id AS account_id, a.email FROM contents c JOIN accounts a ON a.id=c.account_id WHERE c.status='published' AND (c.expires_at IS NULL OR c.expires_at > ?1) ORDER BY c.published_at DESC LIMIT ?2").all(now(), safeLimit) as any[];
+  return rows.map(r => ({ content_id:r.content_id, title:r.title, excerpt:r.content.slice(0,240), url:r.url, published_at:r.published_at, account_id:r.account_id, email:r.email }));
+}
