@@ -6,6 +6,7 @@ import { publish, removeContent, listPublicContent } from "./contents";
 import { search } from "./search";
 import { createRecharge, getRecharge } from "./payments";
 import { setPromotion } from "./promotions";
+import { VERSION } from "./version";
 
 const tools = [
   { name:"create_account", description:"Create a passwordless Manto account", inputSchema:{type:"object",properties:{email:{type:"string"}},required:["email"]} },
@@ -24,7 +25,7 @@ const errorMessage = (e:any) => e?.message || "request_failed";
 export const mcp = new Hono();
 mcp.post("/", async c => {
   let body:any; try { body=await c.req.json(); } catch { return c.json({jsonrpc:"2.0",error:{code:-32700,message:"Invalid JSON"}},400); }
-  if(body.method === "initialize") return c.json({jsonrpc:"2.0",id:body.id,result:{protocolVersion:"2025-06-18",capabilities:{tools:{}},serverInfo:{name:"manto",version:"1.0.5"}}});
+  if(body.method === "initialize") return c.json({jsonrpc:"2.0",id:body.id,result:{protocolVersion:"2025-06-18",capabilities:{tools:{}},serverInfo:{name:"manto",version:VERSION}}});
   if(body.method === "notifications/initialized") return c.body(null,204);
   if(body.method === "tools/list") return c.json({jsonrpc:"2.0",id:body.id,result:{tools}});
   if(body.method !== "tools/call") return c.json({jsonrpc:"2.0",id:body.id,error:{code:-32601,message:"Method not found"}},404);

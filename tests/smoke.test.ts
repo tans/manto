@@ -64,6 +64,23 @@ describe("Manto HTTP API", () => {
     expect(homeHtml).toContain('href="/rss.xml"');
   });
 
+  test("recharge checkout lives on its own page", async () => {
+    const home = await app.request("http://manto.local/");
+    const homeHtml = await home.text();
+    expect(home.status).toBe(200);
+    expect(homeHtml).toContain('href="/pay"');
+    expect(homeHtml).toContain("进入充值页面");
+    expect(homeHtml).not.toContain('id="recharge-form"');
+
+    const pay = await app.request("http://manto.local/pay");
+    const payHtml = await pay.text();
+    expect(pay.status).toBe(200);
+    expect(payHtml).toContain('id="recharge-form"');
+    expect(payHtml).toContain('id="recharge-email"');
+    expect(payHtml).toContain('id="recharge-amount"');
+    expect(payHtml).not.toContain("API Key");
+  });
+
   test("article page, rss feed and sitemap expose published content", async () => {
     const account = await app.request("http://manto.local/v1/accounts", {method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email:`article-${Date.now()}@example.com`})});
     const acc: any = await account.json();

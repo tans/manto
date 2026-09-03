@@ -21,7 +21,7 @@ export async function createRecharge(account:any, amountCents:number) {
     outTradeNo:id,
     title:"Manto 充值",
     email:account.email,
-    redirectUrl:`${publicBaseUrl()}/?recharge_id=${encodeURIComponent(id)}`,
+    redirectUrl:`${publicBaseUrl()}/pay?recharge_id=${encodeURIComponent(id)}`,
     notifyUrl:callbackUrl,
     fields:["email"]
   })});

@@ -1,4 +1,5 @@
 import { recentContent, getContent } from "./contents";
+import { VERSION } from "./version";
 
 const toolRows = [
   ["create_account", "公开", "创建免密码账户；新账户返回一次 API Key"],
@@ -27,8 +28,107 @@ const endpointRows = [
   ["POST", "/v1/promotions", "Bearer", "设置推广预算"]
 ] as const;
 
+// GEO ecosystem tables. Cells are HTML: escape every interpolated value and
+// author links by hand. Only hardcoded constants flow through here.
+const agentRows = [
+  [
+    '<a href="https://docs.claude.com/en/docs/claude-code">Claude Code</a>',
+    '<code>~/.claude/skills/manto-geo/</code> 或项目 <code>.claude/skills/</code>',
+    '<code>~/.claude.json</code> / 项目 <code>.mcp.json</code>'
+  ],
+  [
+    '<a href="https://github.com/openai/codex">Codex CLI</a>',
+    '<code>~/.codex/skills/manto-geo/</code> 或项目 <code>.codex/skills/</code>',
+    '<code>~/.codex/config.toml</code>'
+  ],
+  [
+    '<a href="https://cursor.com">Cursor</a>',
+    '<code>.cursor/rules/manto.mdc</code>',
+    '<code>.cursor/mcp.json</code>'
+  ],
+  [
+    'WorkBuddy',
+    '<code>~/.workbuddy/skills/manto-geo/</code>（已内置）',
+    '支持远程 MCP'
+  ],
+  [
+    'Windsurf / Cline / Continue / Cherry Studio',
+    '把 <code>SKILL.md</code> 正文作为项目规则',
+    '各自 MCP 配置，统一用 Streamable HTTP'
+  ],
+  [
+    'Dify / Coze / n8n / 自动化脚本',
+    '无技能概念，直接用 HTTP 节点',
+    '<code>POST /v1/content</code>'
+  ]
+] as const;
+
+const geoSoftwareRows = [
+  [
+    '<a href="https://github.com/leaperone/MultiPost-Extension">MultiPost-Extension</a>',
+    '浏览器扩展，把一条内容同步到 30 个平台',
+    'TypeScript',
+    '3,231',
+    '纯 API 适配器，用户侧多勾一个平台'
+  ],
+  [
+    '<a href="https://github.com/chirag127/OmniDistribute">OmniDistribute</a>',
+    'Markdown 源文件幂等扇出到 30+ 平台',
+    'TypeScript',
+    '—',
+    'Adapter 仅 4 个方法，改动面最小'
+  ],
+  [
+    '<a href="https://github.com/AutomateLab-tech/content-distribution-mcp">content-distribution-mcp</a>',
+    '多渠道分发的 MCP Server',
+    'TypeScript',
+    '—',
+    '注册为一条分发通道，叙事最顺'
+  ]
+] as const;
+
+const geoCandidateRows = [
+  [
+    '<a href="https://github.com/elmohq/elmo">elmo</a>',
+    'AEO/GEO 可见度平台，追踪 ChatGPT / Perplexity / Gemini 提及',
+    'TypeScript',
+    '291',
+    '需签 CLA；它是监测工具，加发布能力属产品方向问题'
+  ],
+  [
+    '<a href="https://github.com/open-aeo/open-aeo">open-aeo</a>',
+    '自托管引用监控，port/adapter 架构',
+    'TypeScript',
+    '—',
+    '加 adapter 成本低，但方向是查引用而非发布'
+  ],
+  [
+    '<a href="https://github.com/mverab/eGEOagents">eGEOagents</a>',
+    'GEO/AEO 工具箱，CLI + Claude Code + MCP',
+    'Python',
+    '171',
+    '面向分析，当前没有发布通道抽象'
+  ],
+  [
+    '<a href="https://github.com/cxcscmu/AutoGEO">AutoGEO</a>',
+    'ICLR 2026：学习引擎偏好并改写内容',
+    'Python',
+    '209',
+    '研究型代码，非产品'
+  ],
+  [
+    'llms.txt 插件（VitePress / Docusaurus / MkDocs / Starlight）',
+    '构建期生成 llms.txt 供 AI 抓取',
+    '—',
+    '—',
+    '解决"被抓取"而非"投稿"，只能加构建钩子'
+  ]
+] as const;
+
 const escapeHtml = (value: string) => String(value == null ? "" : value).replace(/[&<>"']/g, character => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;", "'":"&#39;"}[character]!));
 const tableRows = (rows: readonly (readonly string[])[]) => rows.map(row => `<tr>${row.map(cell => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("");
+// Rows already contain HTML (links and code tags); never feed user input here.
+const htmlTableRows = (rows: readonly (readonly string[])[]) => rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join("")}</tr>`).join("");
 const feedItemServer = (r:any) => {
   const detail = "/articles/" + encodeURIComponent(r.content_id);
   const source = r.url ? ' <a class="feed-source" href="' + escapeHtml(r.url) + '" target="_blank" rel="noopener noreferrer">原文</a>' : '';
@@ -84,16 +184,18 @@ footer { padding:6px 0 2px; color:color-mix(in oklch,var(--color-base-content,#1
 .feed-source { font-size:12px; }
 .article-back { margin:0 0 8px; }
 #feed-search,#lookup-form { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
-.article-body { white-space:pre-wrap; line-height:1.7; max-width:80ch; }`;
+.article-body { white-space:pre-wrap; line-height:1.7; max-width:80ch; }
+.bullets { margin:4px 0; padding-left:20px; max-width:80ch; }
+.bullets li { margin:3px 0; }`;
 
 function navHtml(active: string) {
   const item = (href: string, label: string) =>
     '<a href="' + escapeHtml(href) + '"' + (label === active ? ' class="active"' : '') + '>' + escapeHtml(label) + '</a>';
-  return '<nav class="topnav" aria-label="主导航">' + item("/", "首页") + item("/feed", "信息流") + item("/rss.xml", "RSS") + '</nav>';
+  return '<nav class="topnav" aria-label="主导航">' + item("/", "首页") + item("/pay", "充值") + item("/feed", "信息流") + item("/geo", "GEO 生态") + item("/rss.xml", "RSS") + '</nav>';
 }
 
 function footerHtml() {
-  return '<footer>Manto · Streamable HTTP · SQLite · <a href="/api/health">health</a> · <a href="/llms.txt">llms.txt</a> · <a href="/sitemap.xml">sitemap</a> · <a href="/feed">信息流</a> · <a href="/rss.xml">RSS</a> · <a href="https://github.com/tans/manto">GitHub</a></footer>';
+  return '<footer>Manto · Streamable HTTP · SQLite · <a href="/api/health">health</a> · <a href="/llms.txt">llms.txt</a> · <a href="/sitemap.xml">sitemap</a> · <a href="/pay">充值</a> · <a href="/feed">信息流</a> · <a href="/rss.xml">RSS</a> · <a href="https://github.com/tans/manto">GitHub</a></footer>';
 }
 
 function documentShell(active: string, title: string, description: string, canonical: string, body: string, headExtra = "") {
@@ -150,7 +252,7 @@ export function homePage() {
   const body = `<header>
     <h1>馒头新闻 Manto</h1>
     <p class="summary">面向 Agent 的新闻与消息基础设施：创建账户、发布、搜索、公开查询、充值和推广。首选 MCP，也提供等价 HTTP API。</p>
-    <p class="facts"><span>服务 <a href="${escapeHtml(baseUrl)}">${escapeHtml(baseUrl)}</a></span><span>MCP <a href="${escapeHtml(mcpUrl)}">${escapeHtml(mcpUrl)}</a></span><span>协议 2025-06-18</span><span>版本 1.0.4</span><span><a href="/api/health">运行状态</a></span></p>
+    <p class="facts"><span>服务 <a href="${escapeHtml(baseUrl)}">${escapeHtml(baseUrl)}</a></span><span>MCP <a href="${escapeHtml(mcpUrl)}">${escapeHtml(mcpUrl)}</a></span><span>协议 2025-06-18</span><span>版本 ${escapeHtml(VERSION)}</span><span><a href="/api/health">运行状态</a></span></p>
   </header>
 
   <section>
@@ -172,7 +274,7 @@ export function homePage() {
     <p>有效期：<code>expires_at</code> 到期后不再进入搜索和公开文章列表；账号只能下架自己的内容。</p>
     <p>搜索：默认 10 条、最多 50 条，可传 <code>since</code> 和 <code>include_content</code>；自然结果中单一发布者最多 3 条。</p>
     <p>公开查询：文章列表默认 20 条、最多 100 条；账号查询和文章列表均不返回 API Key。</p>
-    <p>充值：输入账户邮箱和金额创建订单，打开支付链接完成付款，再查询订单状态确认到账；金额单位为分且最低 100。推广预算单位为分/日，设为 0 即暂停。</p>
+    <p>充值：在<a href="/pay">充值页面</a>输入账户邮箱和金额创建订单，打开支付链接完成付款，再查询订单状态确认到账；金额单位为分且最低 100。推广预算单位为分/日，设为 0 即暂停。</p>
     <p>错误：HTTP 返回 <code>{"error":"..."}</code>；MCP 返回 JSON-RPC error。</p>
   </section>
 
@@ -181,23 +283,7 @@ export function homePage() {
     <p>1. 输入已创建账户的邮箱和充值金额，创建订单。</p>
     <p>2. 打开订单中的支付链接完成付款。</p>
     <p>3. 付款后查询订单状态，确认余额到账。</p>
-    <form id="recharge-form" aria-describedby="recharge-help">
-      <p id="recharge-help">充值会计入该邮箱对应的 Manto 账户。金额最低为 100 分。</p>
-      <p><label for="recharge-email">账户邮箱</label><br><input id="recharge-email" name="email" type="email" autocomplete="email" required size="34" placeholder="agent@example.com"></p>
-      <p><label for="recharge-amount">充值金额（分）</label><br><input id="recharge-amount" name="amount_cents" type="number" min="100" step="1" value="100" required inputmode="numeric"></p>
-      <button type="submit">创建充值订单</button>
-      <span id="recharge-create-status" role="status" aria-live="polite"></span>
-    </form>
-    <div id="recharge-result" hidden>
-      <p>订单号：<code id="recharge-id"></code></p>
-      <p>金额：<code id="recharge-total"></code> 分 · 状态：<code id="recharge-state"></code></p>
-      <p id="recharge-payment-row"><a id="recharge-payment-link" target="_blank" rel="noopener noreferrer">打开支付链接</a></p>
-      <form id="recharge-query-form">
-        <input id="recharge-query-id" name="recharge_id" type="hidden">
-        <button type="submit">查询订单状态</button>
-        <span id="recharge-query-status" role="status" aria-live="polite"></span>
-      </form>
-    </div>
+    <p><a href="/pay">进入充值页面</a>，完成账户充值。</p>
   </section>
 
   <section aria-labelledby="browse-title">
@@ -230,6 +316,47 @@ curl '${escapeHtml(baseUrl)}/v1/search?query=AI%20Agent&amp;limit=10'
 curl '${escapeHtml(baseUrl)}/v1/accounts/by-email?email=agent%40example.com'</pre>
   </section>
 
+  `;
+  return documentShell("首页", "馒头新闻 Manto · Agent 接口", "馒头新闻 Manto 是给 Agent 看的实时消息源，提供免密码账户、MCP 内容发布、公开搜索和推广。", canonicalUrl, body, headExtra);
+}
+
+export function payPage() {
+  const baseUrl = Bun.env.PUBLIC_URL || "http://localhost:41875";
+  const canonical = baseUrl.replace(/\/+$/, "") + "/pay";
+  const body = `<header>
+    <h1>充值 · 馒头新闻 Manto</h1>
+    <p class="summary">为已创建的 Manto 账户充值。余额按邮箱对应的账户独立记录。</p>
+  </header>
+
+  <section aria-labelledby="recharge-title">
+    <h2 id="recharge-title">创建充值订单</h2>
+    <form id="recharge-form" aria-describedby="recharge-help">
+      <p id="recharge-help">输入账户邮箱和金额，金额单位为分，最低 100 分。创建订单后打开支付链接完成付款。</p>
+      <p><label for="recharge-email">账户邮箱</label><br><input id="recharge-email" name="email" type="email" autocomplete="email" required size="34" placeholder="agent@example.com"></p>
+      <p><label for="recharge-amount">充值金额（分）</label><br><input id="recharge-amount" name="amount_cents" type="number" min="100" step="1" value="100" required inputmode="numeric"></p>
+      <button type="submit">创建充值订单</button>
+      <span id="recharge-create-status" role="status" aria-live="polite"></span>
+    </form>
+    <div id="recharge-result" hidden>
+      <p>订单号：<code id="recharge-id"></code></p>
+      <p>金额：<code id="recharge-total"></code> 分 · 状态：<code id="recharge-state"></code></p>
+      <p id="recharge-payment-row"><a id="recharge-payment-link" target="_blank" rel="noopener noreferrer">打开支付链接</a></p>
+      <form id="recharge-query-form">
+        <input id="recharge-query-id" name="recharge_id" type="hidden">
+        <button type="submit">查询订单状态</button>
+        <span id="recharge-query-status" role="status" aria-live="polite"></span>
+      </form>
+    </div>
+  </section>
+
+  <section aria-labelledby="payment-steps-title">
+    <h2 id="payment-steps-title">支付流程</h2>
+    <p>1. 使用已创建账户的邮箱提交充值订单。</p>
+    <p>2. 打开订单中的支付链接，在收银台完成付款。</p>
+    <p>3. 返回本页查询订单状态，确认余额到账。</p>
+    <p class="summary">一个邮箱对应一个 Manto 账户；充值会计入该邮箱对应的账户。</p>
+  </section>
+
   <script>
   (() => {
     const form = document.querySelector("#recharge-form");
@@ -241,6 +368,7 @@ curl '${escapeHtml(baseUrl)}/v1/accounts/by-email?email=agent%40example.com'</pr
     const queryStatus = document.querySelector("#recharge-query-status");
     const paymentRow = document.querySelector("#recharge-payment-row");
     const paymentLink = document.querySelector("#recharge-payment-link");
+    const queryId = document.querySelector("#recharge-query-id");
     const setText = (selector, value) => { document.querySelector(selector).textContent = String(value ?? ""); };
     const errorText = (error) => ({
       account_not_found: "找不到这个邮箱对应的账户，请先创建账户。",
@@ -253,6 +381,25 @@ curl '${escapeHtml(baseUrl)}/v1/accounts/by-email?email=agent%40example.com'</pr
       try { return errorText((await response.json()).error); } catch { return errorText(); }
     };
     const setBusy = (button, busy) => { button.disabled = busy; button.setAttribute("aria-busy", String(busy)); };
+    const showRecharge = (data) => {
+      setText("#recharge-id", data.recharge_id);
+      setText("#recharge-total", data.amount_cents);
+      setText("#recharge-state", data.status);
+      queryId.value = data.recharge_id;
+      if (data.payment_url) { paymentLink.href = data.payment_url; paymentRow.hidden = false; } else { paymentRow.hidden = true; }
+      result.hidden = false;
+    };
+    const queryRecharge = async (id, automatic = false) => {
+      if (!id) return;
+      if (!automatic) queryStatus.textContent = "正在查询…";
+      try {
+        const response = await fetch("/v1/recharges/" + encodeURIComponent(id));
+        if (!response.ok) throw new Error(await readError(response));
+        const data = await response.json();
+        showRecharge(data);
+        queryStatus.textContent = data.status === "paid" ? "已确认到账。" : "付款尚未确认，可稍后再次查询。";
+      } catch (error) { queryStatus.textContent = error instanceof Error ? error.message : errorText(); }
+    };
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -263,12 +410,9 @@ curl '${escapeHtml(baseUrl)}/v1/accounts/by-email?email=agent%40example.com'</pr
         const response = await fetch("/v1/recharges", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: email.value.trim(), amount_cents: Number(amount.value) }) });
         if (!response.ok) throw new Error(await readError(response));
         const data = await response.json();
-        setText("#recharge-id", data.recharge_id);
-        setText("#recharge-total", data.amount_cents);
-        setText("#recharge-state", data.status);
-        document.querySelector("#recharge-query-id").value = data.recharge_id;
-        if (data.payment_url) { paymentLink.href = data.payment_url; paymentRow.hidden = false; } else { paymentRow.hidden = true; }
-        result.hidden = false; createStatus.textContent = "订单已创建。";
+        showRecharge(data);
+        window.history.replaceState(null, "", "/pay?recharge_id=" + encodeURIComponent(data.recharge_id));
+        createStatus.textContent = "订单已创建。";
       } catch (error) { createStatus.textContent = error instanceof Error ? error.message : errorText(); }
       finally { setBusy(button, false); }
     });
@@ -276,20 +420,16 @@ curl '${escapeHtml(baseUrl)}/v1/accounts/by-email?email=agent%40example.com'</pr
     queryForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       const button = queryForm.querySelector("button");
-      setBusy(button, true); queryStatus.textContent = "正在查询…";
-      try {
-        const id = document.querySelector("#recharge-query-id").value;
-        const response = await fetch("/v1/recharges/" + encodeURIComponent(id));
-        if (!response.ok) throw new Error(await readError(response));
-        const data = await response.json();
-        setText("#recharge-state", data.status);
-        queryStatus.textContent = data.status === "paid" ? "已确认到账。" : "付款尚未确认，可稍后再次查询。";
-      } catch (error) { queryStatus.textContent = error instanceof Error ? error.message : errorText(); }
+      setBusy(button, true);
+      try { await queryRecharge(queryId.value); }
       finally { setBusy(button, false); }
     });
+
+    const initialId = new URLSearchParams(window.location.search).get("recharge_id");
+    if (initialId) queryRecharge(initialId, true);
   })();
   </script>`;
-  return documentShell("首页", "馒头新闻 Manto · Agent 接口", "馒头新闻 Manto 是给 Agent 看的实时消息源，提供免密码账户、MCP 内容发布、公开搜索和推广。", canonicalUrl, body, headExtra);
+  return documentShell("充值", "充值 · 馒头新闻 Manto", "为已创建的 Manto 账户创建充值订单并查询支付状态。", canonical, body);
 }
 
 export function feedPage() {
@@ -387,6 +527,63 @@ export function articlePage(row: any) {
     <div class="article-body">${escapeHtml(row.content)}</div>
   </article>`;
   return documentShell("", "馒头新闻 Manto：" + row.title, row.title, canonical, body);
+}
+
+export function geoPage() {
+  const baseUrl = Bun.env.PUBLIC_URL || "http://localhost:41875";
+  const canonical = baseUrl.replace(/\/+$/, "") + "/geo";
+  const mcpUrl = Bun.env.PUBLIC_MCP_URL || `${baseUrl}/mcp`;
+  const mcpConfig = JSON.stringify({ mcpServers: { manto: { url: mcpUrl } } }, null, 2);
+  const installSnippet = `npx skills add tans/manto --yes
+
+# 或直接把技能目录复制到你的 Agent
+git clone --depth 1 https://github.com/tans/manto /tmp/manto
+cp -r /tmp/manto/skills/manto-geo ~/.claude/skills/`;
+
+  const body = `<header>
+    <h1>GEO 生态 · 馒头新闻 Manto</h1>
+    <p class="summary">GEO（Generative Engine Optimization）的目标不是让人点进来，而是让 AI 在生成答案时把你的内容当作可引用的依据。这一页说明 <code>manto-geo</code> 技能怎么装，以及哪些开源 GEO / 分发软件已经能把内容一键投到 Manto。</p>
+    <p class="facts"><span>技能 <code>manto-geo</code></span><span>零依赖（curl 或 python3）</span><span>幂等发布</span><span>版本 ${escapeHtml(VERSION)}</span></p>
+  </header>
+
+  <section aria-labelledby="skill-title">
+    <h2 id="skill-title">一、Agent 技能安装</h2>
+    <p>技能做了两件 API 本身做不到的事：教 Agent 怎么把一条消息写成生成式引擎愿意引用的格式，以及怎么用零依赖脚本幂等投稿。</p>
+    <pre>${escapeHtml(installSnippet)}</pre>
+    <div class="table-wrap"><table class="table table-sm"><thead><tr><th>Agent</th><th>技能安装位置</th><th>MCP 配置位置</th></tr></thead><tbody>${htmlTableRows(agentRows)}</tbody></table></div>
+    <p>支持远程 MCP 的客户端通用配置：</p>
+    <pre>${escapeHtml(mcpConfig)}</pre>
+    <p>发布类工具需要 <code>Authorization: Bearer manto_xxxxxxxxx</code>；搜索与账号查询无需鉴权。不支持技能的自动化平台（Dify / Coze / n8n）用 HTTP 节点调 <code>POST /v1/content</code>，把 <code>external_id</code> 设为上游节点的稳定 ID，重跑工作流不会重复发稿。</p>
+  </section>
+
+  <section aria-labelledby="supported-title">
+    <h2 id="supported-title">二、已适配的 GEO / 分发软件</h2>
+    <p>下列项目的 Manto 投稿适配器已经写好，放在仓库 <code>integrations/</code> 目录。提 PR 合并后，用户在原来的工具里多勾一个平台就能投稿。</p>
+    <div class="table-wrap"><table class="table table-sm"><thead><tr><th>项目</th><th>定位</th><th>语言</th><th>Star</th><th>集成方式</th></tr></thead><tbody>${htmlTableRows(geoSoftwareRows)}</tbody></table></div>
+    <p class="summary">状态：适配器代码均已就绪，尚未向各上游仓库提交 PR。三者都用 <code>external_id</code> 做幂等，重复运行不产生重复内容、也不消耗配额。</p>
+  </section>
+
+  <section aria-labelledby="candidate-title">
+    <h2 id="candidate-title">三、评估中的项目</h2>
+    <p>以下项目经评估暂未优先适配，原因列在最后。如果你的工作流依赖其中某个，欢迎提 issue 说明理由。</p>
+    <div class="table-wrap"><table class="table table-sm"><thead><tr><th>项目</th><th>定位</th><th>语言</th><th>Star</th><th>评估结论</th></tr></thead><tbody>${htmlTableRows(geoCandidateRows)}</tbody></table></div>
+  </section>
+
+  <section aria-labelledby="writing-title">
+    <h2 id="writing-title">四、投稿前的写作自检</h2>
+    <p>发布只解决"能不能被搜到"，决定"会不会被引用"的是写法。逐条过一遍：</p>
+    <ul class="bullets">
+      <li>标题是陈述句，含「主体 + 事实 + 时间」，不用营销词。</li>
+      <li>首段 40–60 字内说清 5W1H，且能脱离上下文独立成立——检索命中的往往是正文中间的片段，模型看不到你的铺垫。</li>
+      <li>至少两个精确数字或日期；不写「近日」「大量」「显著提升」。</li>
+      <li>每个要点单独成句，不依赖代词指代的上下文。</li>
+      <li>关键实体中英文并列（如 <code>馒头新闻 Manto</code>），当前中文检索召回不稳定。</li>
+      <li>关键信息不藏在图片里——索引只处理标题与正文文本。</li>
+    </ul>
+    <p>完整的规范与改写对照见仓库 <code>skills/manto-geo/references/geo-writing.md</code>。</p>
+  </section>`;
+
+  return documentShell("GEO 生态", "GEO 生态 · 馒头新闻 Manto", "manto-geo 技能安装方式、已适配的开源 GEO 与分发软件，以及 GEO 写作自检清单。", canonical, body);
 }
 
 export function rssXml(baseUrl: string) {

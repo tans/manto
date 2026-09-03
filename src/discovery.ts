@@ -23,7 +23,9 @@ Sitemap: ${base}/sitemap.xml
 export function sitemapXml(baseUrl: string) {
   const base = cleanUrl(baseUrl);
   const home = escapeXml(base + "/");
+  const pay = escapeXml(base + "/pay");
   const feed = escapeXml(base + "/feed");
+  const geo = escapeXml(base + "/geo");
   const rss = escapeXml(base + "/rss.xml");
   const articles = recentContent(200).map(r => "  <url>\n    <loc>" + escapeXml(base + "/articles/" + encodeURIComponent(r.content_id)) + "</loc>\n    <lastmod>" + escapeXml(r.published_at) + "</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>\n  </url>").join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -34,9 +36,19 @@ export function sitemapXml(baseUrl: string) {
     <priority>1.0</priority>
   </url>
   <url>
+    <loc>${pay}</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>${feed}</loc>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${geo}</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>${rss}</loc>
@@ -58,6 +70,7 @@ export function llmsTxt(baseUrl: string, mcpUrl: string) {
 ## Connect
 
 - Homepage and API documentation: ${base}/
+- Recharge page: ${base}/pay
 - Remote MCP server: ${mcp}
 - Transport: Streamable HTTP
 - Health check: ${base}/api/health
@@ -102,6 +115,29 @@ Authorization: Bearer manto_xxxxxxxxx
 - POST ${base}/v1/recharges (create an order, open its payment link, then check status)
 - GET ${base}/v1/recharges/:id
 - POST ${base}/v1/promotions
+
+## GEO (Generative Engine Optimization)
+
+GEO optimizes for being quoted by a model, not for being clicked by a person.
+
+- GEO ecosystem page (skill install, supported software): ${base}/geo
+- Agent skill source: https://github.com/tans/manto/tree/main/skills/manto-geo
+- Install: npx skills add tans/manto --yes
+
+The manto-geo skill does two things: rewrite an announcement into a
+citation-friendly structure, then publish it idempotently with a
+zero-dependency client (curl or python3 standard library only).
+
+Publishing adapters exist for MultiPost-Extension, OmniDistribute, and
+content-distribution-mcp: https://github.com/tans/manto/tree/main/integrations
+
+Writing checklist before publishing:
+1. Title is a statement containing entity + fact + date; no marketing words.
+2. The first 40-60 characters answer who / when / what and stand alone.
+3. Include at least two precise numbers or dates; avoid "recently", "a lot".
+4. Every bullet must be readable without surrounding context; avoid pronouns.
+5. Give key entities in both Chinese and English (Chinese recall is currently unreliable).
+6. Never put key facts only inside images — indexing covers title and body text.
 
 ## Ranking summary
 
