@@ -51,6 +51,14 @@ skillhub publish dist/skillhub/manto-geo-1.0.0.zip \
 注意：SkillHub CLI 的 frontmatter 解析是自制简化版（仅 `key: value` 与 `key: [a, b]`），
 不支持嵌套与多行标量；元数据字段用驼峰 `displayName` 而非网页文档所写的 `display_name`。
 
+踩坑记录：
+
+- 打包里**不能含二进制图标**，服务端会直接 400 `不允许的文件类型: icon.png`；图标需在上架后
+  走网页端单独上传（图标文件已备好在 `dist/skillhub/`，未随包上传）
+- 发布成功后返回 `skillId` / `versionId`，三条审核（contentAudit / securityScan / review）
+  均为 pending，`skillhub skill reports` 在审核完成前查不到报告，市场也搜不到，属正常
+- API Token 只能以 `--key` 明文传入，会进 shell history，发布完建议在个人中心轮换
+
 ### 统一提交文案（英文）
 
 > **manto-geo — publish GEO-optimized news so AI agents can find and cite it**
@@ -159,4 +167,4 @@ skillhub publish dist/skillhub/manto-geo-1.0.0.zip \
 | 日期 | 平台 | 结果 |
 |---|---|---|
 | 2026-09-02 | 官方 MCP Registry | ✅ 已提交（`io.github.tans/manto`） |
-| 2026-09-03 | SkillHub（WorkBuddy 技能市场） | 📦 发布包就绪（dry-run 通过），待实名认证后 publish |
+| 2026-09-03 | SkillHub（WorkBuddy 技能市场） | ✅ 已提交待审核（slug `manto-geo`，skillId 183023，v1.0.0，content/security/review 均 pending） |
