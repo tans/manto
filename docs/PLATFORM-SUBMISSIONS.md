@@ -19,7 +19,7 @@
 | 平台 | 状态 | 提交方式 | 说明 |
 |---|---|---|---|
 | **skills.sh** ✅ | 待提交 | `npx skills add tans/manto --yes` | Vercel Labs，流量最高。首次安装触发遥测即上榜，无网页表单 |
-| **SkillHub（WorkBuddy 技能市场）** ✅ | 待发布 | 见下方「SkillHub 发布流程」 | 腾讯官方，需实名认证账号 + API Token，CLI 发布已就绪 |
+| **SkillHub（WorkBuddy 技能市场）** ✅ | **已上架** | 见下方「SkillHub 发布流程」 | 腾讯系，46,696 个已审核 Skill，国内最大。`@user_e866c542/manto-geo` v1.0.0 已上线，**运营策略见 [GROWTH.md 1.1](GROWTH.md#11-skillhub-专项运营已上架优先级最高)** |
 | **agentskill.sh** ❌ | 待核实 | https://agentskill.sh/submit | 实测域名无法连接，需确认是否已下线 |
 | **ClawHub** ✅ | 待提交 | `clawhub skill publish ./skills/manto-geo --slug manto-geo --version 1.0.0` | 需 `npm i -g clawhub` 并登录 |
 | **skills.re** ✅ | 待提交 | https://skills.re/submit | 必须授权 GitHub App；版本快照不可变，发布前校对 |
@@ -29,7 +29,7 @@
 | **awesome-claude-skills** | 待提交 | https://github.com/travisvn/awesome-claude-skills Fork + PR | 加一行，3–7 天 |
 | **Cursor 插件市场** | 待提交 | https://cursor.com/marketplace/publish | 唯一人工审核，耗时最长，**应最先发** |
 
-### SkillHub 发布流程（WorkBuddy 技能市场，2026-09-03 实测）
+### SkillHub 发布流程（WorkBuddy 技能市场，2026-09-03 实测，09-04 已上架）
 
 发布包：`dist/skillhub/manto-geo/`（源目录）与 `dist/skillhub/manto-geo-1.0.0.zip`（上传包），
 frontmatter 已按 SkillHub CLI 校验规则调整（`slug` / `version` / `displayName` 必填），
@@ -58,6 +58,13 @@ skillhub publish dist/skillhub/manto-geo-1.0.0.zip \
 - 发布成功后返回 `skillId` / `versionId`，三条审核（contentAudit / securityScan / review）
   均为 pending，`skillhub skill reports` 在审核完成前查不到报告，市场也搜不到，属正常
 - API Token 只能以 `--key` 明文传入，会进 shell history，发布完建议在个人中心轮换
+
+**09-04 状态**：三条审核通过，已上架为 `@user_e866c542/manto-geo` v1.0.0，
+WorkBuddy 内 `skillhub search manto` 可搜到。图标仍待走网页端单独上传。
+
+上架只是起点。当前标签（内容创作 / SEO 优化 / 内容改写）使其淹没在 GEO 红海，
+搜「馒头」排第 3，需按 [GROWTH.md 1.1](GROWTH.md#11-skillhub-专项运营已上架优先级最高)
+改名、换标签、重写 description 并冲飙升榜。
 
 ### 统一提交文案（英文）
 
