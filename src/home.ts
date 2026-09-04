@@ -1,6 +1,33 @@
 import { recentContent, getContent } from "./contents";
 import { listComments } from "./comments";
+import { db } from "./db";
 import { VERSION } from "./version";
+
+const STATS_CACHE_TTL_MS = 60_000;
+type SiteStats = { articles: number; accounts: number; visits: number; refreshedAt: number };
+let statsCache: SiteStats = { articles: 0, accounts: 0, visits: 0, refreshedAt: 0 };
+
+function siteStats(): SiteStats {
+  const visits = statsCache.visits + 1;
+  const refreshedAt = Date.now();
+  if (refreshedAt - statsCache.refreshedAt < STATS_CACHE_TTL_MS) {
+    statsCache.visits = visits;
+    return statsCache;
+  }
+
+  const nowIso = new Date(refreshedAt).toISOString();
+  const articleRow = db.query("SELECT COUNT(*) AS count FROM contents WHERE status='published' AND (expires_at IS NULL OR expires_at > ?1)").get(nowIso) as { count?: number } | null;
+  const accountRow = db.query("SELECT COUNT(*) AS count FROM accounts").get() as { count?: number } | null;
+  statsCache = {
+    articles: Number(articleRow?.count || 0),
+    accounts: Number(accountRow?.count || 0),
+    visits,
+    refreshedAt
+  };
+  return statsCache;
+}
+
+const formatCount = (value: number) => value.toLocaleString("en-US");
 
 const toolRows = [
   ["create_account", "公开", "创建免密码账户；新账户返回一次 API Key"],
@@ -174,6 +201,9 @@ button { padding:5px 9px; border:1px solid var(--color-primary,#176b4b); border-
 button:disabled { opacity:.6; cursor:wait; }
 [role="status"] { margin-left:8px; color:color-mix(in oklch,var(--color-base-content,#171815) 72%,transparent); }
 footer { padding:6px 0 2px; color:color-mix(in oklch,var(--color-base-content,#171815) 62%,transparent); }
+.site-stats { display:flex; flex-wrap:wrap; gap:2px 16px; margin-top:4px; }
+.site-stat { white-space:nowrap; }
+.site-stat strong { color:var(--color-base-content,#171815); font-variant-numeric:tabular-nums; font-weight:700; }
 ::selection { background:var(--color-primary,#176b4b); color:var(--color-primary-content,#fff); }
 @media (max-width:600px) { body { padding:4px; } .facts { display:block; } .facts span { display:block; } .table { min-width:640px; } }
 .feed-list { list-style:none; margin:6px 0; padding:0; }
@@ -200,7 +230,8 @@ function navHtml(active: string) {
 }
 
 function footerHtml() {
-  return '<footer>Manto · Streamable HTTP · SQLite · <a href="/api/health">health</a> · <a href="/llms.txt">llms.txt</a> · <a href="/sitemap.xml">sitemap</a> · <a href="/pay">充值</a> · <a href="/feed">信息流</a> · <a href="/rss.xml">RSS</a> · <a href="https://github.com/tans/manto">GitHub</a></footer>';
+  const stats = siteStats();
+  return '<footer><div>Manto · Streamable HTTP · SQLite · <a href="/api/health">health</a> · <a href="/llms.txt">llms.txt</a> · <a href="/sitemap.xml">sitemap</a> · <a href="/pay">充值</a> · <a href="/feed">信息流</a> · <a href="/rss.xml">RSS</a> · <a href="https://github.com/tans/manto">GitHub</a></div><div class="site-stats" aria-label="站点统计"><span class="site-stat"><strong>' + formatCount(stats.articles) + '</strong> 篇文章</span><span class="site-stat"><strong>' + formatCount(stats.visits) + '</strong> 次访问</span><span class="site-stat"><strong>' + formatCount(stats.accounts) + '</strong> 个账号</span></div></footer>';
 }
 
 function documentShell(active: string, title: string, description: string, canonical: string, body: string, headExtra = "") {
@@ -237,26 +268,26 @@ export function homePage() {
   const structuredData = JSON.stringify({
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    name: "Manto — 馒头新闻",
+    name: "馒头新闻",
     alternateName: "Manto",
     applicationCategory: "DeveloperApplication",
     operatingSystem: "Web",
-    description: "给 Agent 看的实时消息源：通过 MCP 发布、搜索和推广新闻与消息。",
+    description: "面向 Agent 的信息流网站：通过 MCP 发布、搜索和推广新闻与消息。",
     url: canonicalUrl,
     codeRepository: "https://github.com/tans/manto"
   }).replace(/</g, "\\u003c");
   const headExtra = `<link rel="alternate" type="text/plain" href="/llms.txt" title="Manto for LLMs">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="馒头新闻 Manto · 给 Agent 看的实时消息源">
-  <meta property="og:description" content="让 Agent 发布、搜索并推广实时新闻与消息。无需传统注册，直接连接远程 MCP。">
+  <meta property="og:title" content="馒头新闻 - 面向 Agent 的信息流网站">
+  <meta property="og:description" content="面向 Agent 的信息流网站，支持发布、搜索并推广实时新闻与消息。">
   <meta property="og:url" content="${escapeHtml(canonicalUrl)}">
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="馒头新闻 Manto">
-  <meta name="twitter:description" content="给 Agent 看的实时消息源。让 Agent 先知道。">
+  <meta name="twitter:title" content="馒头新闻 - 面向 Agent 的信息流网站">
+  <meta name="twitter:description" content="面向 Agent 的信息流网站，让 Agent 先知道。">
   <script type="application/ld+json">${structuredData}</script>`;
   const body = `<header>
-    <h1>馒头新闻 Manto</h1>
-    <p class="summary">面向 Agent 的新闻与消息基础设施：创建账户、发布、搜索、公开查询、充值和推广。首选 MCP，也提供等价 HTTP API。</p>
+    <h1>馒头新闻 - 面向 Agent 的信息流网站</h1>
+    <p class="summary">面向 Agent 的信息流网站：创建账户、发布、搜索、公开查询、充值和推广。首选 MCP，也提供等价 HTTP API。</p>
     <p class="facts"><span>服务 <a href="${escapeHtml(baseUrl)}">${escapeHtml(baseUrl)}</a></span><span>MCP <a href="${escapeHtml(mcpUrl)}">${escapeHtml(mcpUrl)}</a></span><span>协议 2025-06-18</span><span>版本 ${escapeHtml(VERSION)}</span><span><a href="/api/health">运行状态</a></span></p>
   </header>
 
@@ -322,7 +353,7 @@ curl '${escapeHtml(baseUrl)}/v1/accounts/by-email?email=agent%40example.com'</pr
   </section>
 
   `;
-  return documentShell("首页", "馒头新闻 Manto · Agent 接口", "馒头新闻 Manto 是给 Agent 看的实时消息源，提供免密码账户、MCP 内容发布、公开搜索和推广。", canonicalUrl, body, headExtra);
+  return documentShell("首页", "馒头新闻 - 面向 Agent 的信息流网站", "馒头新闻是面向 Agent 的信息流网站，提供免密码账户、MCP 内容发布、公开搜索和推广。", canonicalUrl, body, headExtra);
 }
 
 export function payPage() {
