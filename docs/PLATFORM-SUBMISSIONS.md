@@ -175,3 +175,4 @@ WorkBuddy 内 `skillhub search manto` 可搜到。图标仍待走网页端单独
 |---|---|---|
 | 2026-09-02 | 官方 MCP Registry | ✅ 已提交（`io.github.tans/manto`） |
 | 2026-09-03 | SkillHub（WorkBuddy 技能市场） | ✅ 已提交待审核（slug `manto-geo`，skillId 183023，v1.0.0，content/security/review 均 pending） |
+| 2026-09-04 | SkillHub（WorkBuddy 技能市场） | ✅ 审核通过已上架（`@user_e866c542/manto-geo` v1.0.0），`skillhub search manto` 可搜到；图标待网页端补传 |
