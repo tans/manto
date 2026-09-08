@@ -31,7 +31,7 @@
 
 ### SkillHub 发布流程（WorkBuddy 技能市场，2026-09-03 实测，09-04 已上架）
 
-发布包：`dist/skillhub/manto-geo/`（源目录）与 `dist/skillhub/manto-geo-1.0.0.zip`（上传包），
+发布包：`dist/skillhub/manto-geo/`（源目录）与 `dist/skillhub/manto-geo-<版本>.zip`（上传包），
 frontmatter 已按 SkillHub CLI 校验规则调整（`slug` / `version` / `displayName` 必填），
 dry-run 已通过。原 `skills/manto-geo/` 保持跨平台标准格式不动。
 
@@ -41,12 +41,12 @@ dry-run 已通过。原 `skills/manto-geo/` 保持跨平台标准格式不动。
 
 ```bash
 skillhub login --key skh_xxxxxxxx
-skillhub publish dist/skillhub/manto-geo-1.0.0.zip \
-  --version 1.0.0 --changelog "first release to SkillHub"
+skillhub publish dist/skillhub/manto-geo-1.0.1.zip \
+  --version 1.0.1 --changelog "定位调整：主打发布而非 GEO 改写；新增免鉴权搜索入口"
 ```
 
 4. 触发三线并行安全审核（内容合规 / 科恩实验室 / 云鼎实验室），通过后自动上架，
-   WorkBuddy 技能市场可直接搜到「馒头 GEO 投稿」
+   WorkBuddy 技能市场可直接搜到「馒头新闻发布」
 
 注意：SkillHub CLI 的 frontmatter 解析是自制简化版（仅 `key: value` 与 `key: [a, b]`），
 不支持嵌套与多行标量；元数据字段用驼峰 `displayName` 而非网页文档所写的 `display_name`。
