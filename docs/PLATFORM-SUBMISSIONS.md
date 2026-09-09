@@ -19,7 +19,7 @@
 | 平台 | 状态 | 提交方式 | 说明 |
 |---|---|---|---|
 | **skills.sh** ✅ | 待提交 | `npx skills add tans/manto --yes` | Vercel Labs，流量最高。首次安装触发遥测即上榜，无网页表单 |
-| **SkillHub（WorkBuddy 技能市场）** ✅ | **已上架** | 见下方「SkillHub 发布流程」 | 腾讯系，46,696 个已审核 Skill，国内最大。`@user_e866c542/manto-geo` v1.0.0 已上线，**运营策略见 [GROWTH.md 1.1](GROWTH.md#11-skillhub-专项运营已上架优先级最高)** |
+| **SkillHub（WorkBuddy 技能市场）** ✅ | **v1.1.0 已提交，审核中** | 见下方「SkillHub 发布流程」 | `@user_e866c542/manto-geo` v1.1.0 已提交（versionId `300529`）；公开页当前仍展示 v1.0.0，**运营策略见 [GROWTH.md 1.1](GROWTH.md#11-skillhub-专项运营已上架优先级最高)** |
 | **agentskill.sh** ❌ | 待核实 | https://agentskill.sh/submit | 实测域名无法连接，需确认是否已下线 |
 | **ClawHub** ✅ | 待提交 | `clawhub skill publish ./skills/manto-geo --slug manto-geo --version 1.0.0` | 需 `npm i -g clawhub` 并登录 |
 | **skills.re** ✅ | 待提交 | https://skills.re/submit | 必须授权 GitHub App；版本快照不可变，发布前校对 |
@@ -61,6 +61,8 @@ skillhub publish dist/skillhub/manto-geo-1.0.1.zip \
 
 **09-04 状态**：三条审核通过，已上架为 `@user_e866c542/manto-geo` v1.0.0，
 WorkBuddy 内 `skillhub search manto` 可搜到。图标仍待走网页端单独上传。
+
+**09-09 状态**：v1.1.0 已通过 CLI 接受，versionId `300529`，changelog 为「新增安装→首篇发布→再次发布引导；增加 release job 同步 changelog 的幂等模板」；contentAudit / securityScan / review 均为 `pending`，在审核结束前不要对外宣称新版已上架。
 
 上架只是起点。当前标签（内容创作 / SEO 优化 / 内容改写）使其淹没在 GEO 红海，
 搜「馒头」排第 3，需按 [GROWTH.md 1.1](GROWTH.md#11-skillhub-专项运营已上架优先级最高)
