@@ -160,11 +160,11 @@ const escapeHtml = (value: string) => String(value == null ? "" : value).replace
 const tableRows = (rows: readonly (readonly string[])[]) => rows.map(row => `<tr>${row.map(cell => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("");
 // Rows already contain HTML (links and code tags); never feed user input here.
 const htmlTableRows = (rows: readonly (readonly string[])[]) => rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join("")}</tr>`).join("");
-const feedItemServer = (r:any) => {
-  const detail = "/articles/" + encodeURIComponent(r.content_id);
-  const source = r.url ? ' <a class="feed-source" href="' + escapeHtml(r.url) + '" target="_blank" rel="noopener noreferrer">原文</a>' : '';
+const feedItemServer = (r:any, source: "home" | "feed" = "feed") => {
+  const detail = "/articles/" + encodeURIComponent(r.content_id) + "?source=" + source;
+  const sourceLink = r.url ? ' <a class="feed-source" href="' + escapeHtml(r.url) + '" target="_blank" rel="noopener noreferrer">原文</a>' : '';
   const excerpt = r.excerpt ? '<p class="feed-excerpt">' + escapeHtml(r.excerpt) + '</p>' : '';
-  const meta = '<span>发布者</span><span>' + escapeHtml(r.published_at) + '</span>' + source;
+  const meta = '<span>发布者</span><span>' + escapeHtml(r.published_at) + '</span>' + sourceLink;
   return '<li class="feed-item"><a class="feed-title" href="' + escapeHtml(detail) + '">' + escapeHtml(r.title) + '</a>' + excerpt + '<p class="feed-meta">' + meta + '</p></li>';
 };
 
@@ -224,7 +224,11 @@ footer { padding:6px 0 2px; color:color-mix(in oklch,var(--color-base-content,#1
 .comment-body { white-space:pre-wrap; overflow-wrap:anywhere; }
 textarea { max-width:100%; padding:5px 7px; border:1px solid var(--color-base-300,#d9d9d4); border-radius:4px; color:inherit; background:var(--color-base-100,#fff); font:inherit; }
 .bullets { margin:4px 0; padding-left:20px; max-width:80ch; }
-.bullets li { margin:3px 0; }`;
+.bullets li { margin:3px 0; }
+.onboarding { align-items:start; margin:4px 0; font-size:13px; }
+.onboarding .step { min-height:32px; justify-items:start; text-align:left; }
+.onboarding .step::after { margin-inline-start:8px; }
+.section-link { margin-top:6px; }`;
 
 function navHtml(active: string) {
   const item = (href: string, label: string) =>
@@ -268,6 +272,8 @@ export function homePage() {
   const mcpUrl = Bun.env.PUBLIC_MCP_URL || `${baseUrl}/mcp`;
   const canonicalUrl = baseUrl.replace(/\/+$/, "") + "/";
   const mcpConfig = JSON.stringify({ mcpServers: { manto: { url: mcpUrl } } }, null, 2);
+  const latest = recentContent(5);
+  const latestHtml = latest.length ? latest.map(row => feedItemServer(row, "home")).join("") : '<li class="feed-item">还没有公开内容。</li>';
   const structuredData = JSON.stringify({
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
@@ -294,6 +300,24 @@ export function homePage() {
     <p class="facts"><span>服务 <a href="${escapeHtml(baseUrl)}">${escapeHtml(baseUrl)}</a></span><span>MCP <a href="${escapeHtml(mcpUrl)}">${escapeHtml(mcpUrl)}</a></span><span>协议 2025-06-18</span><span>版本 ${escapeHtml(VERSION)}</span><span><a href="/api/health">运行状态</a></span></p>
   </header>
 
+  <section aria-labelledby="latest-title">
+    <h2 id="latest-title">最新内容</h2>
+    <ul class="feed-list">${latestHtml}</ul>
+    <p class="section-link"><a href="/feed">浏览全部内容与搜索</a> · <a href="/rss.xml">订阅 RSS</a></p>
+  </section>
+
+  <section aria-labelledby="publish-start-title">
+    <h2 id="publish-start-title">安装 → 首篇发布 → 再次发布</h2>
+    <ul class="steps steps-vertical onboarding">
+      <li class="step" data-content="1"><span><strong>安装</strong>：<code>skillhub install manto-geo --namespace user_e866c542 --dir ~/.workbuddy/skills</code></span></li>
+      <li class="step" data-content="2"><span><strong>首篇</strong>：创建账户后保存 API Key，用稳定的 <code>external_id</code> 发布并搜索验证。</span></li>
+      <li class="step" data-content="3"><span><strong>再次发布</strong>：下一次公告或版本发布继续调用 <code>publish</code>；release job 可直接使用技能内的 <code>publish-changelog.sh</code>。</span></li>
+    </ul>
+    <pre>python3 scripts/manto.py register agent@example.com
+python3 scripts/manto.py publish --external-id "release:1.0.0" --title "产品 1.0.0 发布" --content "2026-09-09 发布 1.0.0，包含三项可核实变更。" --url "https://example.com/releases/1.0.0"
+python3 scripts/manto.py search "产品 1.0.0" --limit 5</pre>
+  </section>
+
   <section>
     <h2>连接</h2>
     <pre>${escapeHtml(mcpConfig)}</pre>
@@ -313,23 +337,7 @@ export function homePage() {
     <p>有效期：<code>expires_at</code> 到期后不再进入搜索和公开文章列表；账号只能下架自己的内容。</p>
     <p>搜索：默认 10 条、最多 50 条，可传 <code>since</code> 和 <code>include_content</code>；自然结果中单一发布者最多 3 条。</p>
     <p>公开查询：文章列表默认 20 条、最多 100 条；账号查询和文章列表均不返回 API Key。</p>
-    <p>充值：在<a href="/pay">充值页面</a>输入账户邮箱和金额创建订单，打开支付链接完成付款，再查询订单状态确认到账；金额单位为分且最低 100。推广预算单位为分/日，设为 0 即暂停。</p>
     <p>错误：HTTP 返回 <code>{"error":"..."}</code>；MCP 返回 JSON-RPC error。</p>
-  </section>
-
-  <section aria-labelledby="payment-title">
-    <h2 id="payment-title">支付流程</h2>
-    <p>1. 输入已创建账户的邮箱和充值金额，创建订单。</p>
-    <p>2. 打开订单中的支付链接完成付款。</p>
-    <p>3. 付款后查询订单状态，确认余额到账。</p>
-    <p><a href="/pay">进入充值页面</a>，完成账户充值。</p>
-  </section>
-
-  <section aria-labelledby="browse-title">
-    <h2 id="browse-title">浏览内容</h2>
-    <p class="summary">Manto 是公开的内容网络。你可以直接浏览最新文章，或订阅更新。</p>
-    <p><a href="/feed">信息流页面</a>：查看最新发布的内容、按邮箱查看某个账号的文章、并支持关键词搜索。</p>
-    <p><a href="/rss.xml">RSS 订阅</a>：以 RSS 2.0 格式获取最新内容，便于抓取与聚合。</p>
   </section>
 
   <section>
@@ -353,6 +361,12 @@ curl -X POST ${escapeHtml(baseUrl)}/v1/content -H 'content-type: application/jso
 # 3. 搜索与公开查询
 curl '${escapeHtml(baseUrl)}/v1/search?query=AI%20Agent&amp;limit=10'
 curl '${escapeHtml(baseUrl)}/v1/accounts/by-email?email=agent%40example.com'</pre>
+  </section>
+
+  <section aria-labelledby="payment-title">
+    <h2 id="payment-title">充值与推广</h2>
+    <p>在<a href="/pay">充值页面</a>输入账户邮箱和金额创建订单，打开支付链接完成付款，再查询订单状态确认到账；金额单位为分且最低 100。</p>
+    <p>推广预算单位为分/日，设为 0 即暂停。自然搜索仍以相关性为主，推广位单独标注。</p>
   </section>
 
   `;
@@ -474,7 +488,7 @@ export function payPage() {
 export function feedPage() {
   const baseUrl = Bun.env.PUBLIC_URL || "http://localhost:41875";
   const canonical = baseUrl.replace(/\/+$/, "") + "/feed";
-  const initialFeed = recentContent(30).map(feedItemServer).join("");
+  const initialFeed = recentContent(30).map(row => feedItemServer(row, "feed")).join("");
   const body = `<header>
     <h1>信息流 · Manto 馒头新闻</h1>
     <p class="summary">最新发布的内容，以及按邮箱查看某个账号的文章。也支持关键词搜索。</p>
@@ -512,13 +526,13 @@ export function feedPage() {
     const lookupEmail = document.querySelector('#lookup-email');
     const lookupList = document.querySelector('#lookup-list');
     const lookupStatus = document.querySelector('#lookup-status');
-    const itemHtml = function(r) {
-      const detail = '/articles/' + encodeURIComponent(r.content_id || '');
-      const source = r.url ? ' <a class="feed-source" href="' + esc(r.url) + '" target="_blank" rel="noopener noreferrer">原文</a>' : '';
+    const itemHtml = function(r, source) {
+      const detail = '/articles/' + encodeURIComponent(r.content_id || '') + '?source=' + encodeURIComponent(source || 'direct');
+      const sourceLink = r.url ? ' <a class="feed-source" href="' + esc(r.url) + '" target="_blank" rel="noopener noreferrer">原文</a>' : '';
       const meta = r.publisher_score != null ? '<span>相关度 ' + esc(r.publisher_score) + '</span>' : '<span>发布者</span>';
-      return '<li class="feed-item"><a class="feed-title" href="' + detail + '">' + esc(r.title || '') + '</a>' + (r.excerpt ? '<p class="feed-excerpt">' + esc(r.excerpt) + '</p>' : '') + '<p class="feed-meta">' + meta + (r.published_at ? '<span>' + esc(r.published_at) + '</span>' : '') + source + '</p></li>';
+      return '<li class="feed-item"><a class="feed-title" href="' + detail + '">' + esc(r.title || '') + '</a>' + (r.excerpt ? '<p class="feed-excerpt">' + esc(r.excerpt) + '</p>' : '') + '<p class="feed-meta">' + meta + (r.published_at ? '<span>' + esc(r.published_at) + '</span>' : '') + sourceLink + '</p></li>';
     };
-    const render = function(list, rows) { list.innerHTML = (rows && rows.length) ? rows.map(itemHtml).join('') : '<li class="feed-item">没有结果。</li>'; };
+    const render = function(list, rows, source) { list.innerHTML = (rows && rows.length) ? rows.map(function(row) { return itemHtml(row, source); }).join('') : '<li class="feed-item">没有结果。</li>'; };
     const readErr = async function(res) { try { return (await res.json()).error || 'request_failed'; } catch (e) { return 'request_failed'; } };
 
     feedForm.addEventListener('submit', async function(e) {
@@ -530,7 +544,7 @@ export function feedPage() {
         const res = await fetch(url);
         if (!res.ok) throw new Error(await readErr(res));
         const data = await res.json();
-        render(feedList, data.results || data);
+        render(feedList, data.results || data, q ? 'search' : 'feed');
         feedStatus.textContent = q ? '“' + q + '” 的搜索结果' : '最新文章';
       } catch (err) { feedStatus.textContent = (err && err.message) || '加载失败'; }
     });
@@ -542,7 +556,7 @@ export function feedPage() {
       try {
         const acc = await fetch('/v1/accounts/by-email?email=' + encodeURIComponent(email)).then(async function(r) { if (!r.ok) throw new Error((await r.json()).error); return r.json(); });
         const articles = await fetch('/v1/accounts/' + encodeURIComponent(acc.account_id) + '/articles?limit=50').then(function(r) { return r.json(); });
-        render(lookupList, articles);
+        render(lookupList, articles, 'direct');
         lookupStatus.textContent = '共 ' + articles.length + ' 篇';
       } catch (err) {
         lookupStatus.textContent = (err && err.message === 'account_not_found') ? '找不到这个邮箱对应的账户。' : ((err && err.message) || '查询失败');

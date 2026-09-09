@@ -79,9 +79,13 @@ describe("Manto HTTP API", () => {
 
     const home = await app.request("http://manto.local/");
     const homeHtml = await home.text();
-    expect(homeHtml).toContain("浏览内容");
+    expect(homeHtml).toContain("浏览全部内容与搜索");
     expect(homeHtml).toContain('href="/feed"');
     expect(homeHtml).toContain('href="/rss.xml"');
+    expect(homeHtml).toContain("skillhub install manto-geo");
+    expect(homeHtml).toContain("publish-changelog.sh");
+    expect(homeHtml.indexOf("最新内容")).toBeLessThan(homeHtml.indexOf("充值与推广"));
+    expect(homeHtml).toContain("?source=home");
   });
 
   test("recharge checkout lives on its own page", async () => {
@@ -89,7 +93,7 @@ describe("Manto HTTP API", () => {
     const homeHtml = await home.text();
     expect(home.status).toBe(200);
     expect(homeHtml).toContain('href="/pay"');
-    expect(homeHtml).toContain("进入充值页面");
+    expect(homeHtml).toContain("充值与推广");
     expect(homeHtml).not.toContain('id="recharge-form"');
 
     const pay = await app.request("http://manto.local/pay");
