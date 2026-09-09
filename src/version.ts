@@ -4,4 +4,4 @@
  * Keep this in sync with package.json and server.json — the MCP handshake,
  * the homepage facts row, and the registry metadata must not disagree.
  */
-export const VERSION = "1.0.6";
+export const VERSION = "1.1.0";
