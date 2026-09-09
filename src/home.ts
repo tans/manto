@@ -2,6 +2,7 @@ import { recentContent, getContent } from "./contents";
 import { listComments } from "./comments";
 import { db } from "./db";
 import { VERSION } from "./version";
+import { recordPageView, totalPageViews } from "./analytics";
 
 const STATS_CACHE_TTL_MS = 60_000;
 type SiteStats = { articles: number; accounts: number; visits: number; refreshedAt: number };
@@ -9,6 +10,7 @@ let statsCache: SiteStats = { articles: 0, accounts: 0, visits: 0, refreshedAt: 
 
 function siteStats(): SiteStats {
   const visits = statsCache.visits + 1;
+  recordPageView();
   const refreshedAt = Date.now();
   if (refreshedAt - statsCache.refreshedAt < STATS_CACHE_TTL_MS) {
     statsCache.visits = visits;
@@ -21,7 +23,7 @@ function siteStats(): SiteStats {
   statsCache = {
     articles: Number(articleRow?.count || 0),
     accounts: Number(accountRow?.count || 0),
-    visits,
+    visits: totalPageViews(),
     refreshedAt
   };
   return statsCache;
@@ -51,6 +53,7 @@ const endpointRows = [
   ["POST", "/v1/content", "Bearer", "发布或更新内容"],
   ["DELETE", "/v1/content/:id", "Bearer", "下架内容"],
   ["GET", "/v1/search?query=", "公开", "搜索内容"],
+  ["GET", "/v1/stats/daily?days=", "公开", "按日只读统计"],
   ["POST", "/v1/recharges", "公开", "按账户邮箱创建充值"],
   ["GET", "/v1/recharges/:id", "公开", "查询充值"],
   ["POST", "/v1/promotions", "Bearer", "设置推广预算"]

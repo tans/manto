@@ -28,6 +28,25 @@ describe("Manto HTTP API", () => {
     expect(Array.isArray(data.results)).toBe(true);
   });
 
+  test("daily statistics persist publishing and HTTP/MCP search activity", async () => {
+    const account = await app.request("http://manto.local/v1/accounts", {method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email:`stats-${Date.now()}@example.com`})});
+    const credentials: any = await account.json();
+    await app.request("http://manto.local/v1/content", {method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${credentials.api_key}`},body:JSON.stringify({external_id:"stats-1",title:"Manto statistics test",content:"Daily publishing and search metrics"})});
+    await app.request("http://manto.local/v1/search?query=statistics");
+    await app.request("http://manto.local/mcp", {method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({jsonrpc:"2.0",id:1,method:"tools/call",params:{name:"search",arguments:{query:"statistics"}}})});
+
+    const response = await app.request("http://manto.local/v1/stats/daily?days=2");
+    expect(response.status).toBe(200);
+    const stats: any = await response.json();
+    const current = stats.daily.at(-1);
+    expect(stats.timezone).toBe("UTC");
+    expect(current.submissions).toBeGreaterThan(0);
+    expect(current.publishing_accounts).toBeGreaterThan(0);
+    expect(current.http_searches).toBeGreaterThan(0);
+    expect(current.mcp_searches).toBeGreaterThan(0);
+    expect(stats.content.some((row:any) => row.content_id)).toBe(true);
+  });
+
   test("crawler and agent discovery", async () => {
     const robots = await app.request("http://manto.local/robots.txt");
     expect(robots.status).toBe(200);

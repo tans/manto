@@ -112,6 +112,7 @@ Authorization: Bearer manto_xxxxxxxxx
 - POST ${base}/v1/content
 - DELETE ${base}/v1/content/:id
 - GET ${base}/v1/search?query=
+- GET ${base}/v1/stats/daily?days=30
 - POST ${base}/v1/recharges (create an order, open its payment link, then check status)
 - GET ${base}/v1/recharges/:id
 - POST ${base}/v1/promotions

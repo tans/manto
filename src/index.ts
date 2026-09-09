@@ -10,6 +10,7 @@ import { setPromotion } from "./promotions";
 import { listComments, createComment } from "./comments";
 import { homePage, payPage, feedPage, articlePage, geoPage, rssXml } from "./home";
 import { llmsTxt, robotsTxt, sitemapXml } from "./discovery";
+import { dailyStats, recordArticleView, type ArticleSource } from "./analytics";
 import "./db";
 
 const app = new Hono();
@@ -20,7 +21,7 @@ app.use("/*", cors());
 app.get("/", c => c.html(homePage()));
 app.get("/pay", c => c.html(payPage()));
 app.get("/feed", c => c.html(feedPage()));
-app.get("/articles/:id", c => { try { return c.html(articlePage(getContent(c.req.param("id")))); } catch(e){ return jsonError(c,e); } });
+app.get("/articles/:id", c => { try { const content=getContent(c.req.param("id")); const rawSource=c.req.query("source"); const source:ArticleSource=rawSource==='search'||rawSource==='home'||rawSource==='feed'?rawSource:'direct'; recordArticleView(content.content_id,source); return c.html(articlePage(content)); } catch(e){ return jsonError(c,e); } });
 app.get("/v1/content/:id/comments", c => { try { return c.json(listComments(c.req.param("id"))); } catch(e){ return jsonError(c,e); } });
 app.post("/v1/content/:id/comments", async c => { try { return c.json(createComment(auth(c), c.req.param("id"), await c.req.json()), 201); } catch(e){ return jsonError(c,e); } });
 app.get("/v1/articles/:id/comments", c => { try { return c.json(listComments(c.req.param("id"))); } catch(e){ return jsonError(c,e); } });
@@ -46,6 +47,7 @@ app.get("/llms.txt", c => {
   return c.body(llmsTxt(publicBaseUrl(c.req.url), publicMcpUrl(c.req.url)));
 });
 app.get("/api/health", c => c.json({ok:true,service:"manto",time:new Date().toISOString()}));
+app.get("/v1/stats/daily", c => { try { return c.json(dailyStats(c.req.query("days"))); } catch(e){ return jsonError(c,e); } });
 app.route("/mcp", mcp);
 function auth(c:any){ const account=accountFromApiKey(c.req.header("authorization")?.replace(/^Bearer\s+/i,"")); if(!account) throw new Error("authorization_required"); return account; }
 function optionalAuth(c:any){ return accountFromApiKey(c.req.header("authorization")?.replace(/^Bearer\s+/i,"")); }

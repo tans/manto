@@ -86,6 +86,17 @@ Search without authentication:
 curl 'https://manto.xin/v1/search?query=AI%20Agent&limit=10'
 ```
 
+## Publishing statistics
+
+`GET /v1/stats/daily?days=30` is public and read-only. It returns daily submission,
+publishing-account, first-publisher, HTTP-search, MCP-search, and page-view counts.
+The summary includes mature-cohort 7-day republish rate, weekly active publishers,
+weekly submissions, and largest-author share. Per-content rows contain only public
+content IDs/titles and aggregate impressions, clicks, and article views; search terms
+and account emails are never stored in analytics.
+
+Daily boundaries use UTC. `days` accepts 2–365 and defaults to 30.
+
 ## Ranking
 
 The account component is intentionally small and transparent:

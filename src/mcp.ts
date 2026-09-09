@@ -38,7 +38,7 @@ mcp.post("/", async c => {
     else if(name==='get_account') result=accountView(account);
     else if(name==='publish') result=publish(account,args);
     else if(name==='remove_content') result=removeContent(account,String(args.content_id));
-    else if(name==='search') result=search(args);
+    else if(name==='search') result=search(args,"mcp");
     else if(name==='create_recharge') result=await createRecharge(account||publicAccountByEmail(String(args.email||"")),Number(args.amount_cents));
     else if(name==='get_recharge') result=await getRecharge(String(args.recharge_id));
     else result=setPromotion(account,args);

@@ -48,6 +48,22 @@ CREATE TABLE IF NOT EXISTS daily_usage (
   post_count INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY(account_id, usage_date)
 );
+CREATE TABLE IF NOT EXISTS daily_metrics (
+  metric_date TEXT PRIMARY KEY,
+  http_search_count INTEGER NOT NULL DEFAULT 0,
+  mcp_search_count INTEGER NOT NULL DEFAULT 0,
+  page_view_count INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS content_daily_metrics (
+  metric_date TEXT NOT NULL,
+  content_id TEXT NOT NULL REFERENCES contents(id) ON DELETE CASCADE,
+  search_impression_count INTEGER NOT NULL DEFAULT 0,
+  article_view_count INTEGER NOT NULL DEFAULT 0,
+  search_click_count INTEGER NOT NULL DEFAULT 0,
+  home_click_count INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY(metric_date, content_id)
+);
+CREATE INDEX IF NOT EXISTS content_daily_metrics_content_idx ON content_daily_metrics(content_id, metric_date);
 CREATE TABLE IF NOT EXISTS recharges (
   id TEXT PRIMARY KEY,
   account_id TEXT NOT NULL REFERENCES accounts(id),
